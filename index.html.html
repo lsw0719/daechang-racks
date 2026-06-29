@@ -782,7 +782,7 @@ async function archiveCard(id,e) {
 async function restoreCard(id,e) {
   e.stopPropagation();
   const c=cards.find(x=>x.id===id); if(!c)return;
-  c.status=3; delete c.archivedAt;
+  c.status=2; delete c.archivedAt;
   renderArchive(); await saveCard_db(c);
 }
 
