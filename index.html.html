@@ -200,6 +200,7 @@
     <div class="header-nav">
       <button class="nav-btn active" id="navMain" onclick="showPage('main')">진행 현황</button>
       <button class="nav-btn" id="navArchive" onclick="showPage('archive')">출고완료 <span id="archiveBadge" style="font-size:11px;opacity:.7;"></span></button>
+      <button class="nav-btn" id="navQuote" onclick="showPage('quote')">견적가</button>
     </div>
   </div>
   <div class="header-right">
@@ -221,6 +222,148 @@
   </div>
   <div class="archive-list" id="archiveList"></div>
 </div>
+
+<div id="quotePage" style="display:none;">
+  <div style="padding:16px 24px 40px;max-width:1100px;margin:0 auto;">
+
+    <!-- 상단: 발주정보 + 네이밍 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end;">
+      <div>
+        <div class="field-label">발주일</div>
+        <input type="text" id="qDate" class="date-input" maxlength="4" placeholder="0629" oninput="updateQNaming()" style="font-size:14px;" autocomplete="off">
+      </div>
+      <div>
+        <div class="field-label">담당자</div>
+        <select id="qPerson" onchange="updateQNaming()" style="font-size:13px;padding:7px 8px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+          <option value="">선택</option>
+          <option>이근표</option><option>이하림</option><option>이수완</option><option>김성배</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label" style="margin-bottom:5px;">품목 <span style="font-weight:400;color:var(--tx3);">(중복선택)</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="qItemSel">
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;"><input type="checkbox" value="아연도금랙" onchange="updateQNaming()"> 아연도금랙</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;"><input type="checkbox" value="중량랙" onchange="updateQNaming()"> 중량랙</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;"><input type="checkbox" value="철망" onchange="updateQNaming()"> 철망</label>
+        </div>
+      </div>
+      <div>
+        <div class="field-label">건 네이밍</div>
+        <div id="qNaming" style="font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;min-height:34px;">—</div>
+      </div>
+    </div>
+
+    <!-- 메인: 입력 + 부품목록 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
+
+      <!-- 왼쪽: 탭 + 입력 -->
+      <div>
+        <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border-dark);border-radius:4px;overflow:hidden;">
+          <button id="qtab-zinc"  onclick="setQTab('zinc')"  style="flex:1;padding:8px;font-family:var(--sans);font-size:12px;font-weight:500;border:none;background:var(--tx);color:#fff;cursor:pointer;">아연도금랙</button>
+          <button id="qtab-heavy" onclick="setQTab('heavy')" style="flex:1;padding:8px;font-family:var(--sans);font-size:12px;border:none;background:var(--surface);color:var(--tx2);cursor:pointer;border-left:1px solid var(--border-dark);">중량랙</button>
+          <button id="qtab-mesh"  onclick="setQTab('mesh')"  style="flex:1;padding:8px;font-family:var(--sans);font-size:12px;border:none;background:var(--surface);color:var(--tx2);cursor:pointer;border-left:1px solid var(--border-dark);">철망</button>
+        </div>
+
+        <!-- 아연도금랙 -->
+        <div id="qZincInput">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:10px;letter-spacing:.04em;">아연도금랙 사양</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">가로</div>
+                <select id="qZW" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option>700</option><option>900</option><option>1000</option><option>1200</option><option>1500</option>
+                </select></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">깊이</div>
+                <select id="qZD" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option>300</option><option>450</option><option>600</option>
+                </select></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">높이</div>
+                <select id="qZH" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option>900</option><option>1200</option><option>1500</option><option>1800</option><option>2100</option><option>2400</option>
+                </select></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">단수</div>
+                <input type="number" id="qZLev" min="1" max="10" value="3" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);"></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">구분</div>
+                <select id="qZType" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option value="single">독립형</option><option value="connect">연결형</option>
+                </select></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">대수</div>
+                <input type="number" id="qZCount" min="1" value="1" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);"></div>
+            </div>
+            <button onclick="calcZinc()" style="width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:3px;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;">+ 부품 목록에 추가</button>
+          </div>
+        </div>
+
+        <!-- 중량랙 -->
+        <div id="qHeavyInput" style="display:none;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:10px;letter-spacing:.04em;">중량랙 사양</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">가로</div>
+                <select id="qHW" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option>900</option><option>1200</option><option>1500</option><option>1800</option>
+                </select></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">깊이</div>
+                <select id="qHD" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option>450</option><option>600</option><option>900</option>
+                </select></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">높이</div>
+                <select id="qHH" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option>1500</option><option>1800</option><option>2100</option><option>2400</option><option>2700</option>
+                </select></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">단수</div>
+                <input type="number" id="qHLev" min="1" max="10" value="3" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);"></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">구분</div>
+                <select id="qHType" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+                  <option value="single">독립형</option><option value="connect">연결형</option>
+                </select></div>
+              <div><div style="font-size:10px;color:var(--tx2);margin-bottom:3px;">대수</div>
+                <input type="number" id="qHCount" min="1" value="1" style="width:100%;font-size:12px;padding:5px 6px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);"></div>
+            </div>
+            <button onclick="calcHeavy()" style="width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:3px;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;">+ 부품 목록에 추가</button>
+          </div>
+        </div>
+
+        <!-- 철망 -->
+        <div id="qMeshInput" style="display:none;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:10px;letter-spacing:.04em;">철망 규격 선택</div>
+            <div id="qMeshList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 부품 목록 -->
+      <div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:13px;font-weight:600;">부품 목록</div>
+            <div style="display:flex;gap:5px;">
+              <button onclick="addEmptyItem()" style="font-size:11px;padding:3px 10px;border:1px dashed var(--border-dark);background:var(--bg);color:var(--tx2);border-radius:3px;cursor:pointer;">+ 직접 추가</button>
+              <button onclick="resetQuote()" style="font-size:11px;padding:3px 10px;border:1px solid var(--border-dark);background:var(--bg);color:var(--tx2);border-radius:3px;cursor:pointer;">초기화</button>
+            </div>
+          </div>
+          <div id="qItemList" style="min-height:100px;max-height:420px;overflow-y:auto;">
+            <div style="text-align:center;padding:30px 0;font-size:12px;color:var(--tx3);">사양을 입력하고 추가하세요</div>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;color:var(--tx2);">합계</div>
+            <div style="font-size:18px;font-weight:700;color:var(--accent);font-family:var(--mono);" id="qTotal">0 원</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+          <button onclick="copyQuote()" style="flex:1;padding:9px;background:var(--tx);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;">📋 텍스트 복사</button>
+          <button onclick="exportQuoteImage()" style="flex:1;padding:9px;background:#059669;color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;">🖼 이미지 추출</button>
+          <button onclick="sendToKanban()" style="flex:1;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;">➤ 견적요청</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
   <div class="modal">
     <div class="modal-header">
@@ -234,7 +377,7 @@
         <input type="text" id="fDate" class="date-input" maxlength="4" placeholder="0609" oninput="onDateInput(this)" autocomplete="off">
         <div class="date-hint">월일 4자리 · 예) 0609</div>
       </div>
-      <div class="field-group"><div class="field-label">품목</div><div class="seg-group" id="segItem"></div></div>
+      <div class="field-group"><div class="field-label">품목 <span style="font-weight:400;color:var(--tx3);font-size:10px;">(중복선택 가능)</span></div><div id="segItem" style="display:flex;gap:6px;flex-wrap:wrap;"></div></div>
       <div class="field-group"><div class="field-label">발주담당자</div><div class="seg-group" id="segPerson"></div></div>
       <div class="field-group">
         <div class="field-label">견적일 / 발주일</div>
@@ -272,8 +415,8 @@
       <div class="field-group">
         <div class="field-label">현재 상태</div>
         <select id="fStatus">
-          <option value="0">견적요청</option><option value="1">확인완료견적</option>
-          <option value="2">발주확정</option><option value="3">출고일자 확정</option>
+          <option value="0">견적요청</option><option value="1">발주확정</option>
+          <option value="2">출고일자 확정</option>
         </select>
       </div>
     </div>
@@ -395,13 +538,13 @@ async function dbDelete(id) {
 // ---- APP ----
 const ITEMS = ['메쉬망','바퀴용접','비규격','아연도금'];
 const PERSONS = ['이수완','이하림','이근표','김성배'];
-const STATUS_LABELS = ['견적요청','확인완료견적','발주확정','출고일자 확정'];
-const STATUS_NEXT   = ['확인완료견적으로','발주확정으로','출고일자 확정으로'];
-const STATUS_PREV   = ['견적요청으로','확인완료견적으로','발주확정으로'];
-const STATUS_COLORS = ['#9E9890','#856404','#0C5460','#155724'];
+const STATUS_LABELS = ['견적요청','발주확정','출고일자 확정'];
+const STATUS_NEXT   = ['발주확정으로','출고일자 확정으로'];
+const STATUS_PREV   = ['견적요청으로','발주확정으로'];
+const STATUS_COLORS = ['#9E9890','#0C5460','#155724'];
 
 let cards = [], editId = null;
-let selectedItem = ITEMS[0], selectedPerson = PERSONS[0], selectedDest = '스피드랙';
+let selectedItems = [ITEMS[0]], selectedPerson = PERSONS[0], selectedDest = '스피드랙';
 let filterItem='all', filterPerson='all', filterStatus='all';
 let archiveFilterItem='all', archiveFilterPerson='all';
 let pendingImages = [], lbImages = [], lbIdx = 0;
@@ -505,10 +648,14 @@ function showPage(p) {
   currentPage=p;
   document.getElementById('mainPage').style.display = p==='main'?'block':'none';
   document.getElementById('archivePage').style.display = p==='archive'?'block':'none';
+  document.getElementById('quotePage').style.display = p==='quote'?'block':'none';
   document.getElementById('navMain').classList.toggle('active',p==='main');
   document.getElementById('navArchive').classList.toggle('active',p==='archive');
+  document.getElementById('navQuote').classList.toggle('active',p==='quote');
   document.querySelector('.btn-new').style.display = p==='main'?'':'none';
-  p==='archive' ? renderArchive() : render();
+  if(p==='archive') renderArchive();
+  else if(p==='quote') renderQuote();
+  else render();
 }
 
 // IMAGE
@@ -539,7 +686,7 @@ function renderImgPreview() {
 
 // MODAL
 function onDateInput(el) { el.value=el.value.replace(/\D/g,'').slice(0,4); el.classList.toggle('invalid',el.value.length>0&&el.value.length<4); updatePreview(); }
-function updatePreview() { document.getElementById('namePreview').textContent=buildName(document.getElementById('fDate').value,selectedItem,selectedPerson); }
+function updatePreview() { document.getElementById('namePreview').textContent=buildName(document.getElementById('fDate').value,selectedItems.join('·'),selectedPerson); }
 function clrDF(id) { const el=document.getElementById(id); el.value=''; el.classList.remove('invalid'); }
 function toggleShipTBD() {
   const tbd=document.getElementById('fShipTBD').checked;
@@ -558,7 +705,7 @@ function openNewModal() {
   document.getElementById('fShipDate').disabled=false;
   document.getElementById('fShipDate').style.opacity='1';
   document.getElementById('fDestDetail').value=''; document.getElementById('fNote').value=''; document.getElementById('fStatus').value='0';
-  selectedItem=ITEMS[0]; selectedPerson=PERSONS[0]; selectedDest='스피드랙';
+  selectedItems=[ITEMS[0]]; selectedPerson=PERSONS[0]; selectedDest='스피드랙';
   renderSegButtons(); renderImgPreview(); updatePreview();
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -576,8 +723,8 @@ function openEditModal(id) {
   document.getElementById('fShipDate').style.opacity=tbd?'0.4':'1';
   if(tbd)document.getElementById('fShipDate').value='';
   document.getElementById('fDestDetail').value=c.destDetail||''; document.getElementById('fNote').value=c.note||'';
-  document.getElementById('fStatus').value=String(Math.min(c.status,3));
-  selectedItem=c.item; selectedPerson=c.person; selectedDest=c.dest||'스피드랙';
+  document.getElementById('fStatus').value=String(Math.min(c.status,2));
+  selectedItems=c.item?c.item.split('·'):[ITEMS[0]]; selectedPerson=c.person; selectedDest=c.dest||'스피드랙';
   renderSegButtons(); renderImgPreview(); updatePreview();
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -589,8 +736,8 @@ async function saveCard() {
   if(!isValidDate(date)){alert('날짜를 4자리로 입력하세요. 예) 0609');return;}
   const prevStatus=editId?(cards.find(x=>x.id===editId)?.status??0):0;
   const card={
-    id:editId||genId(), name:buildName(date,selectedItem,selectedPerson), date,
-    item:selectedItem, person:selectedPerson,
+    id:editId||genId(), name:buildName(date,selectedItems.join('·'),selectedPerson), date,
+    item:selectedItems.join('·'), person:selectedPerson,
     quoteDate:document.getElementById('fQuoteDate').value,
     orderDate:document.getElementById('fOrderDate').value,
     shipDate: document.getElementById('fShipTBD').checked ? '미정' : document.getElementById('fShipDate').value,
@@ -615,7 +762,7 @@ async function deleteCard(id,e) {
 }
 async function advanceStatus(id,e) {
   e.stopPropagation();
-  const c=cards.find(x=>x.id===id); if(!c||c.status>=3)return;
+  const c=cards.find(x=>x.id===id); if(!c||c.status>=2)return;
   c.status++; const t=today4();
   if(c.status===1&&!c.quoteDate)c.quoteDate=t;
   if(c.status===2&&!c.orderDate)c.orderDate=t;
@@ -640,12 +787,24 @@ async function restoreCard(id,e) {
 }
 
 function renderSegButtons() {
-  document.getElementById('segItem').innerHTML=ITEMS.map(it=>`<button class="seg-btn ${it===selectedItem?'active':''}" onclick="selectItem('${it}')">${it}</button>`).join('');
+  document.getElementById('segItem').innerHTML=ITEMS.map(it=>`
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;border:1px solid ${selectedItems.includes(it)?'var(--tx)':'var(--border-dark)'};border-radius:20px;background:${selectedItems.includes(it)?'var(--tx)':'var(--surface)'};font-size:12px;color:${selectedItems.includes(it)?'#fff':'var(--tx2)'};">
+      <input type="checkbox" ${selectedItems.includes(it)?'checked':''} onchange="toggleItem('${it}')" style="display:none;">${it}
+    </label>`).join('');
   document.getElementById('segPerson').innerHTML=PERSONS.map(p=>`<button class="seg-btn ${p===selectedPerson?'active':''}" onclick="selectPerson('${p}')">${p}</button>`).join('');
   document.getElementById('segDest').innerHTML=['스피드랙','직송'].map(d=>`<button class="seg-btn ${d===selectedDest?'active':''}" onclick="selectDest('${d}')">${d}</button>`).join('');
   document.getElementById('destDetailWrap').style.display=selectedDest==='직송'?'block':'none';
 }
-function selectItem(v){selectedItem=v;renderSegButtons();updatePreview();}
+function toggleItem(v){
+  if(selectedItems.includes(v)) {
+    if(selectedItems.length===1) return; // 최소 1개
+    selectedItems=selectedItems.filter(i=>i!==v);
+  } else {
+    selectedItems=[...selectedItems,v];
+  }
+  renderSegButtons(); updatePreview();
+}
+function selectItem(v){selectedItems=[v];renderSegButtons();updatePreview();}
 function selectPerson(v){selectedPerson=v;renderSegButtons();updatePreview();}
 function selectDest(v){selectedDest=v;renderSegButtons();}
 
@@ -669,7 +828,7 @@ function renderSummary(){
 function renderFilters(){
   const ic=['all',...ITEMS].map(v=>`<button class="chip ${filterItem===v?'on':''}" onclick="setFI('${v}')">${v==='all'?'전체 품목':v}</button>`).join('');
   const pc=['all',...PERSONS].map(v=>`<button class="chip ${filterPerson===v?'on':''}" onclick="setFP('${v}')">${v==='all'?'전체 담당':v}</button>`).join('');
-  const sc=['all','0','1','2','3'].map(v=>`<button class="chip ${filterStatus===v?'on':''}" onclick="setFS('${v}')">${v==='all'?'전체 상태':STATUS_LABELS[parseInt(v)]}</button>`).join('');
+  const sc=['all','0','1','2'].map(v=>`<button class="chip ${filterStatus===v?'on':''}" onclick="setFS('${v}')">${v==='all'?'전체 상태':STATUS_LABELS[parseInt(v)]}</button>`).join('');
   document.getElementById('filterBar').innerHTML=`<span class="fl">품목</span>${ic}<div class="fdiv"></div><span class="fl">담당</span>${pc}<div class="fdiv"></div><span class="fl">상태</span>${sc}`;
 }
 function setFI(v){filterItem=v;render();} function setFP(v){filterPerson=v;render();} function setFS(v){filterStatus=v;render();}
@@ -679,15 +838,70 @@ function renderKanban(){
   document.getElementById('kanban').innerHTML=STATUS_LABELS.map((lb,si)=>{
     const col=fc.filter(c=>c.status===si);
     return`<div class="column col-${si}"><div class="col-header"><div class="col-title-wrap"><div class="col-badge"></div><span class="col-title">${lb}</span></div><span class="col-count">${col.length}</span></div><div class="col-cards">${col.length?col.map(c=>cardHtml(c)).join(''):'<div class="empty-col">건 없음</div>'}</div></div>`;
-  }).join('');
+  }).join('') + calKanbanCol();
+}
+
+function calKanbanCol() {
+  const today = new Date();
+  const yr = today.getFullYear(), mo = today.getMonth();
+  const todayStr = String(mo+1).padStart(2,'0')+String(today.getDate()).padStart(2,'0');
+  const mn = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const TYPE_LABEL = {'ji-exp':'직송 예상','ji-cfm':'직송 확정','sp-exp':'스피드랙 예상','sp-cfm':'스피드랙 확정'};
+  const CAL_COLORS_K = {'ji-exp':'#22C55E','ji-cfm':'#3B82F6','sp-exp':'#F97316','sp-cfm':'#EF4444'};
+
+  // 이번 달 이벤트 (달력 메모 + 카드 출고일자)
+  const todayFull = `${yr}${todayStr}`;
+  const toFull = e => `${e.year||yr}${e.date}`;
+  const allEvs = [
+    ...calEvents,
+    ...cards.filter(c=>c.shipDate&&c.shipDate!=='미정'&&isValidDate(c.shipDate))
+      .map(c=>({id:'card_'+c.id,date:c.shipDate,year:yr,type:c.dest==='직송'?'ji-cfm':'sp-cfm',text:c.name,fromCard:true}))
+  ].filter(e=>toFull(e)>=todayFull);
+
+  // 날짜순 정렬
+  allEvs.sort((a,b)=>toFull(a).localeCompare(toFull(b)));
+
+  let rows = '';
+  if(!allEvs.length) {
+    rows = '<div class="empty-col">예정된 출고 없음</div>';
+  } else {
+    let lastDate = '';
+    allEvs.forEach(e => {
+      const mo2 = parseInt(e.date.slice(0,2));
+      const d2 = parseInt(e.date.slice(2,4));
+      if(e.date !== lastDate) {
+        rows += `<div style="font-size:10px;font-weight:600;color:var(--tx3);margin:8px 0 3px;letter-spacing:.04em;">${mn[mo2-1]} ${d2}일</div>`;
+        lastDate = e.date;
+      }
+      rows += `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;background:var(--bg);margin-bottom:3px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${CAL_COLORS_K[e.type]};flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(e.text)}</div>
+          <div style="font-size:9px;color:var(--tx3);">${TYPE_LABEL[e.type]||''}</div>
+        </div>
+        ${!e.fromCard?`<button onclick="deleteCalEvent('${e.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;flex-shrink:0;">×</button>`:''}
+      </div>`;
+    });
+  }
+
+  return `<div class="column" style="border-color:var(--border);">
+    <div class="col-header">
+      <div class="col-title-wrap">
+        <span style="font-size:13px;">📅</span>
+        <span class="col-title">출고 예정 (오늘 이후)</span>
+      </div>
+      <button onclick="toggleCal()" style="font-size:10px;padding:2px 7px;border:1px solid var(--border-dark);background:var(--bg);color:var(--tx2);border-radius:3px;cursor:pointer;">달력</button>
+    </div>
+    <div class="col-cards" style="overflow-y:auto;max-height:calc(100vh - 260px);">${rows}</div>
+  </div>`;
 }
 
 function cardHtml(c){
-  const nxt=c.status<3?STATUS_NEXT[c.status]:null,prv=c.status>0?STATUS_PREV[c.status-1]:null,isL=c.status===3;
+  const nxt=c.status<2?STATUS_NEXT[c.status]:null,prv=c.status>0?STATUS_PREV[c.status-1]:null,isL=c.status===2;
   const di=[c.quoteDate?`견적 ${formatDate(c.quoteDate)}`:'',c.orderDate?`발주 ${formatDate(c.orderDate)}`:'',c.shipDate?`출고 ${c.shipDate==='미정'?'미정':formatDate(c.shipDate)}`:''].filter(Boolean).join(' · ');
   const dt=c.dest?`<span class="tag" style="background:${c.dest==='직송'?'#FFF3CD':'#E8F5E9'};color:${c.dest==='직송'?'#856404':'#2E7D32'}">${c.dest==='직송'&&c.destDetail?`직송 ${escHtml(c.destDetail)}`:c.dest}</span>`:'';
   const imgs=c.images||[];
-  const th=imgs.length?`<div class="card-thumb" onclick="openLightboxFromCard('${c.id}',0,event)"><img src="${imgs[0]}">${imgs.length>1?`<span class="card-thumb-count">+${imgs.length}</span>`:''}</div>`:'';
+  const th=imgs.length?`<div class="card-meta" style="margin-top:4px;cursor:pointer;color:var(--accent);" onclick="openLightboxFromCard('${c.id}',0,event)">🖼 이미지 ${imgs.length}장</div>`:'';
   const nt=c.note?`<div class="card-note">${escHtml(c.note)}</div>`:'';
   return`<div class="card" onclick="openEditModal('${c.id}')"><div class="card-name">${escHtml(c.name)}</div><div class="card-tags"><span class="tag tag-item">${c.item}</span><span class="tag tag-person">${c.person}</span>${dt}</div>${di?`<div class="card-meta">${di}</div>`:''}${nt}${th}<div class="card-actions" onclick="event.stopPropagation()">${prv?`<button class="btn-back" onclick="rewindStatus('${c.id}',event)">◀</button>`:''} ${isL?`<button class="btn-archive" onclick="archiveCard('${c.id}',event)">▶ 출고완료</button>`:nxt?`<button class="btn-status" onclick="advanceStatus('${c.id}',event)">▶ ${nxt}</button>`:'<span style="flex:1"></span>'} <button class="btn-delete" onclick="deleteCard('${c.id}',event)">삭제</button></div></div>`;
 }
@@ -705,7 +919,7 @@ function renderArchive(){
     const di=[c.quoteDate?`견적 ${formatDate(c.quoteDate)}`:'',c.orderDate?`발주 ${formatDate(c.orderDate)}`:'',c.shipDate?`출고 ${c.shipDate==='미정'?'미정':formatDate(c.shipDate)}`:''].filter(Boolean).join(' · ');
     const ds=c.dest?(c.dest==='직송'&&c.destDetail?`직송 ${escHtml(c.destDetail)}`:c.dest):'';
     const imgs2=c.images||[];
-    const th2=imgs2.length?`<div class="card-thumb" onclick="openLightboxFromCard('${c.id}',0,event)"><img src="${imgs2[0]}">${imgs2.length>1?`<span class="card-thumb-count">+${imgs2.length}</span>`:''}</div>`:'';
+    const th2=imgs2.length?`<div class="card-meta" style="margin-top:4px;cursor:pointer;color:var(--accent);" onclick="openLightboxFromCard('${c.id}',0,event)">🖼 이미지 ${imgs2.length}장</div>`:'';
     const nt=c.note?`<div class="card-note" style="font-size:12px;">${escHtml(c.note)}</div>`:'';
     return`<div class="archive-card" onclick="openEditModal('${c.id}')">
       <div style="font-family:var(--mono);font-size:13px;font-weight:500;color:var(--tx);margin-bottom:6px;word-break:break-all;">${escHtml(c.name)}</div>
@@ -869,7 +1083,336 @@ async function deleteCalEvent(id) {
   await deleteCalEventDb(id);
 }
 
-function render(){renderSummary();renderFilters();renderKanban();}
+// ---- 견적가 ----
+const HEAVY_PRICES = {
+  기둥: {1500:5840,1800:7080,2100:8280,2400:9370,2700:11570},
+  상부받침: {450:1190,600:1600,900:2400},
+  선반받침: {450:1190,600:1600,900:2400},
+  전면빔: {900:2490,1200:3290,1500:4180,1800:4940},
+  선반: {'900*450':7540,'900*600':9280,'900*900':14110,'1200*450':10050,'1200*600':12370,'1200*900':18750,'1500*450':12570,'1500*600':15470,'1500*900':23500,'1800*450':15020,'1800*600':18450,'1800*900':28130},
+  안전핀: 70,
+};
+const ZINC_PRICES = {
+  기둥:    {900:2500,1200:3300,1500:3760,1800:4470,2100:5170,2400:5860},
+  상부받침: {300:480,450:680,600:810},
+  선반받침: {300:480,450:680,600:810},
+  전면빔:  {700:1500,900:1800,1000:2350,1200:2350,1500:2900},
+  선반: {
+    '700*300':3400,'700*450':4500,'700*600':6100,
+    '900*300':3800,'900*450':4800,'900*600':6600,
+    '1000*300':4900,'1000*450':6300,'1000*600':8800,
+    '1200*300':4900,'1200*450':6300,'1200*600':8800,
+    '1500*300':6000,'1500*450':7600,'1500*600':11190,
+  },
+  안전좌: 120,
+  안전핀: 70,
+};
+const MESH_PRICES = [
+  {spec:'880×1500',price:13900},{spec:'880×1800',price:16700},{spec:'880×2100',price:19450},{spec:'880×2400',price:22200},
+  {spec:'1180×1500',price:18500},{spec:'1180×1800',price:22200},{spec:'1180×2100',price:25900},{spec:'1180×2400',price:29650},
+  {spec:'280×1500',price:4900},{spec:'280×1800',price:5900},{spec:'280×2100',price:6700},{spec:'280×2400',price:7700},
+  {spec:'430×1500',price:7300},{spec:'430×1800',price:8750},{spec:'430×2100',price:10100},{spec:'430×2400',price:11500},
+  {spec:'580×1500',price:9950},{spec:'580×1800',price:11650},{spec:'580×2100',price:13450},{spec:'580×2400',price:15350},
+];
+
+let qTab = 'zinc';
+let qItems = []; // [{id, name, spec, price, qty, editable}]
+
+function getQNaming() {
+  const d = document.getElementById('qDate')?.value||'';
+  const p = document.getElementById('qPerson')?.value||'';
+  const checked = [...document.querySelectorAll('#qItemSel input:checked')].map(el=>el.value);
+  if(!d||!p||!checked.length) return '—';
+  return `${d}_${checked.join('·')}_${p}`;
+}
+function updateQNaming() {
+  const el = document.getElementById('qNaming');
+  if(el) el.textContent = getQNaming();
+}
+
+function setQTab(t) {
+  qTab = t;
+  ['zinc','heavy','mesh'].forEach(k => {
+    const btn = document.getElementById('qtab-'+k);
+    if(!btn) return;
+    const isActive = k===t;
+    btn.style.cssText = `flex:1;padding:8px;font-family:var(--sans);font-size:12px;border:none;cursor:pointer;border-left:1px solid var(--border-dark);`+(isActive?'background:var(--tx);color:#fff;font-weight:500;':'background:var(--surface);color:var(--tx2);');
+  });
+  document.getElementById('qtab-zinc').style.borderLeft='none';
+  document.getElementById('qZincInput').style.display  = t==='zinc'?'block':'none';
+  document.getElementById('qHeavyInput').style.display = t==='heavy'?'block':'none';
+  document.getElementById('qMeshInput').style.display  = t==='mesh'?'block':'none';
+  if(t==='mesh') renderMeshInput();
+}
+
+function renderMeshInput() {
+  document.getElementById('qMeshList').innerHTML = MESH_PRICES.map(m =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);">
+      <div>
+        <span style="font-size:13px;color:var(--tx);">철망 ${m.spec}</span>
+        <span style="font-size:11px;color:var(--tx3);margin-left:8px;font-family:var(--mono);">${m.price.toLocaleString()}원</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <button onclick="meshAddQty('${m.spec}',-1)" style="width:22px;height:22px;border:1px solid var(--border-dark);background:var(--bg);border-radius:3px;cursor:pointer;font-size:13px;color:var(--tx2);">−</button>
+        <span style="font-family:var(--mono);font-size:12px;min-width:24px;text-align:center;" id="mq-${m.spec.replace(/[×]/g,'x')}">${getMeshQty(m.spec)||0}</span>
+        <button onclick="meshAddQty('${m.spec}',1)" style="width:22px;height:22px;border:1px solid var(--border-dark);background:var(--bg);border-radius:3px;cursor:pointer;font-size:13px;color:var(--tx2);">+</button>
+        <button onclick="addMeshItem('${m.spec}',${m.price})" style="padding:3px 10px;font-size:11px;border:none;background:var(--accent);color:#fff;border-radius:3px;cursor:pointer;font-family:var(--sans);margin-left:4px;">추가</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+let meshQty = {};
+function getMeshQty(spec){return meshQty[spec]||0;}
+function meshAddQty(spec,dir){
+  meshQty[spec]=Math.max(0,(meshQty[spec]||0)+dir);
+  const id='mq-'+spec.replace(/[×]/g,'x');
+  const el=document.getElementById(id);
+  if(el)el.textContent=meshQty[spec];
+}
+function addMeshItem(spec,price){
+  const qty=meshQty[spec]||1;
+  mergeOrPush({id:genId(),name:'철망',spec,price,qty,editable:true});
+  meshQty[spec]=0;
+  renderMeshInput();
+  renderQItems();
+}
+
+function mergeOrPush(newItem) {
+  // 같은 품명+규격이면 수량만 합산
+  const existing = qItems.find(i=>i.name===newItem.name && i.spec===newItem.spec);
+  if(existing) { existing.qty += newItem.qty; }
+  else { qItems.push(newItem); }
+}
+
+function calcHeavy() {
+  const w = parseInt(document.getElementById('qHW').value);
+  const d = parseInt(document.getElementById('qHD').value);
+  const h = parseInt(document.getElementById('qHH').value);
+  const lev = parseInt(document.getElementById('qHLev').value)||1;
+  const type = document.getElementById('qHType').value;
+  const cnt = parseInt(document.getElementById('qHCount').value)||1;
+  const pillarCnt = type==='single' ? 4*cnt : (cnt===1?4:cnt*2+2);
+  const beamCnt = 4*cnt;
+  const topBrCnt = 2*cnt;
+  const shelfBrCnt = (lev-1)*2*cnt;
+  const shelfCnt = lev*cnt;
+  const pinCnt = pillarCnt*2;
+  const hp = HEAVY_PRICES;
+  if(hp.기둥[h]) mergeOrPush({id:genId(),name:'중량랙/규격/기둥/W',spec:String(h),price:hp.기둥[h],qty:pillarCnt,editable:true});
+  if(hp.전면빔[w]) mergeOrPush({id:genId(),name:'중량랙/규격/전면빔/W',spec:String(w),price:hp.전면빔[w],qty:beamCnt,editable:true});
+  if(hp.상부받침[d]) mergeOrPush({id:genId(),name:'중량랙/규격/상부받침/W',spec:String(d),price:hp.상부받침[d],qty:topBrCnt,editable:true});
+  if(hp.선반받침[d]&&shelfBrCnt>0) mergeOrPush({id:genId(),name:'중량랙/규격/선반받침/W',spec:String(d),price:hp.선반받침[d],qty:shelfBrCnt,editable:true});
+  const shelfKey=`${w}*${d}`;
+  if(hp.선반[shelfKey]) mergeOrPush({id:genId(),name:'중량랙/규격/선반/W',spec:`${w}×${d}`,price:hp.선반[shelfKey],qty:shelfCnt,editable:true});
+  mergeOrPush({id:genId(),name:'중량랙/부속/안전핀/W',spec:'',price:hp.안전핀,qty:pinCnt,editable:true});
+  renderQItems();
+}
+
+function calcZinc() {
+  const w    = parseInt(document.getElementById('qZW').value);
+  const d    = parseInt(document.getElementById('qZD').value);
+  const h    = parseInt(document.getElementById('qZH').value);
+  const lev  = parseInt(document.getElementById('qZLev').value)||1;
+  const type = document.getElementById('qZType').value;
+  const cnt  = parseInt(document.getElementById('qZCount').value)||1;
+  const pillarCnt  = type==='single' ? 4*cnt : (cnt===1?4:cnt*2+2);
+  const beamCnt    = 4*cnt;
+  const topBrCnt   = 2*cnt;
+  const shelfBrCnt = (lev-1)*2*cnt;
+  const shelfCnt   = lev*cnt;
+  const seatCnt    = pillarCnt;
+  const pinCnt     = pillarCnt*2;
+  const zp = ZINC_PRICES;
+  if(zp.기둥[h])    mergeOrPush({id:genId(),name:'아연도금랙/규격/기둥/G',    spec:String(h), price:zp.기둥[h],    qty:pillarCnt, editable:true});
+  if(zp.전면빔[w])  mergeOrPush({id:genId(),name:'아연도금랙/규격/전면빔/G',  spec:String(w), price:zp.전면빔[w],  qty:beamCnt,   editable:true});
+  if(zp.상부받침[d]) mergeOrPush({id:genId(),name:'아연도금랙/규격/상부받침/G',spec:String(d), price:zp.상부받침[d],qty:topBrCnt,  editable:true});
+  if(zp.선반받침[d]&&shelfBrCnt>0) mergeOrPush({id:genId(),name:'아연도금랙/규격/선반받침/G',spec:String(d),price:zp.선반받침[d],qty:shelfBrCnt,editable:true});
+  const shelfKey=`${w}*${d}`;
+  if(zp.선반[shelfKey]) mergeOrPush({id:genId(),name:'아연도금랙/규격/선반/G',spec:`${w}×${d}`,price:zp.선반[shelfKey],qty:shelfCnt,editable:true});
+  mergeOrPush({id:genId(),name:'아연도금랙/부속/안전좌/G',spec:'50*50',price:zp.안전좌,qty:seatCnt,editable:true});
+  mergeOrPush({id:genId(),name:'아연도금랙/부속/안전핀/G',spec:'4파이', price:zp.안전핀, qty:pinCnt,  editable:true});
+  renderQItems();
+}
+
+function addManualItem() {
+  const name = document.getElementById('qAddName').value.trim();
+  const spec = document.getElementById('qAddSpec').value.trim();
+  const price = parseInt(document.getElementById('qAddPrice').value)||0;
+  if(!name){alert('품명을 입력하세요.');return;}
+  qItems.push({id:genId(),name,spec,price,qty:1,editable:true,_manual:true});
+  document.getElementById('qAddName').value='';
+  document.getElementById('qAddSpec').value='';
+  document.getElementById('qAddPrice').value='';
+  renderQItems();
+}
+
+function updateQItemQty(id, val) {
+  const item = qItems.find(i=>i.id===id);
+  if(!item)return;
+  item.qty = Math.max(0,parseInt(val)||0);
+  renderQItems();
+}
+function removeQItem(id) {
+  qItems = qItems.filter(i=>i.id!==id);
+  renderQItems();
+}
+
+function addEmptyItem() {
+  qItems.push({id:genId(),name:'',spec:'',price:0,qty:1,editable:true,_manual:true,_new:true});
+  renderQItems();
+  // 마지막 추가된 품명 input에 포커스
+  setTimeout(()=>{
+    const inputs = document.querySelectorAll('#qItemList .q-name-inp');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  },50);
+}
+
+function updateQItemField(id, field, val) {
+  const item = qItems.find(i=>i.id===id); if(!item)return;
+  if(field==='price'||field==='qty') item[field]=Math.max(0,parseInt(val)||0);
+  else item[field]=val;
+  // 합계만 업데이트 (리렌더 없이)
+  const total=qItems.reduce((s,i)=>s+i.qty*i.price,0);
+  document.getElementById('qTotal').textContent=total.toLocaleString()+' 원';
+}
+
+function renderQItems() {
+  const el = document.getElementById('qItemList');
+  if(!qItems.length){
+    el.innerHTML='<div style="text-align:center;padding:30px 0;font-size:12px;color:var(--tx3);">부품을 계산하면 여기에 표시됩니다</div>';
+    document.getElementById('qTotal').textContent='0 원';
+    return;
+  }
+  let html = '';
+  qItems.forEach(item=>{
+    const amt = item.qty*item.price;
+    html += `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:0.5px solid var(--border);" id="qi-${item.id}">
+      <div style="flex:2;min-width:0;display:flex;flex-direction:column;gap:2px;">
+        <input class="q-name-inp" value="${escHtml(item.name)}" placeholder="품명" onchange="updateQItemField('${item.id}','name',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:2px;background:var(--surface);color:var(--tx);width:100%;">
+        <input value="${escHtml(item.spec)}" placeholder="규격" onchange="updateQItemField('${item.id}','spec',this.value)" style="font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:2px;background:var(--surface);color:var(--tx2);width:100%;">
+      </div>
+      <input type="number" value="${item.price||''}" placeholder="단가" onchange="updateQItemField('${item.id}','price',this.value);renderQItems();" style="width:60px;font-size:11px;padding:3px 4px;border:1px solid var(--border);border-radius:2px;text-align:right;background:var(--surface);color:var(--tx);font-family:var(--mono);">
+      <div style="display:flex;align-items:center;gap:2px;">
+        <button onclick="updateQItemQty('${item.id}',${item.qty-1})" style="width:20px;height:20px;border:1px solid var(--border-dark);background:var(--bg);border-radius:2px;cursor:pointer;font-size:12px;color:var(--tx2);">−</button>
+        <input type="number" value="${item.qty}" min="0" onchange="updateQItemQty('${item.id}',this.value)" style="width:38px;text-align:center;border:1px solid var(--border-dark);border-radius:2px;padding:2px;font-size:11px;font-family:var(--mono);background:var(--surface);color:var(--tx);">
+        <button onclick="updateQItemQty('${item.id}',${item.qty+1})" style="width:20px;height:20px;border:1px solid var(--border-dark);background:var(--bg);border-radius:2px;cursor:pointer;font-size:12px;color:var(--tx2);">+</button>
+      </div>
+      <div style="font-size:11px;font-family:var(--mono);color:${amt>0?'var(--accent)':'var(--tx3)'};min-width:58px;text-align:right;">${amt>0?amt.toLocaleString()+'원':'—'}</div>
+      <button onclick="removeQItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;">×</button>
+    </div>`;
+  });
+  el.innerHTML = html;
+  const total=qItems.reduce((s,i)=>s+i.qty*i.price,0);
+  document.getElementById('qTotal').textContent=total.toLocaleString()+' 원';
+}
+
+async function _exportQuoteImageAsBase64() {
+  if(!qItems.length) return null;
+  return _drawQuoteCanvas();
+}
+
+async function _drawQuoteCanvas() {
+  const naming = getQNaming();
+  const rows = qItems.filter(i=>i.name);
+  const total = rows.reduce((s,i)=>s+i.qty*i.price,0);
+  const W=600, ROW=30, HEADER=40, FOOTER=44, NAMING_H=30, PAD=16;
+  const H = HEADER + rows.length*ROW + FOOTER + NAMING_H + PAD*2;
+  const canvas = document.createElement('canvas');
+  const dpr = window.devicePixelRatio||2;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1A1916'; ctx.fillRect(0,0,W,HEADER);
+  ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+  [{label:'품명',x:130},{label:'규격',x:280},{label:'수량',x:370},{label:'단가',x:450},{label:'합계',x:545}]
+    .forEach(c=>ctx.fillText(c.label,c.x,HEADER/2+5));
+  rows.forEach((item,i)=>{
+    const y=HEADER+i*ROW;
+    ctx.fillStyle=i%2===0?'#F9F9F7':'#fff'; ctx.fillRect(0,y,W,ROW);
+    ctx.fillStyle='#1A1916'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(item.name||'—',PAD,y+ROW/2+4,240);
+    ctx.fillText(item.spec||'—',250,y+ROW/2+4,110);
+    ctx.textAlign='right';
+    ctx.fillText(item.qty+'개',395,y+ROW/2+4);
+    ctx.fillText((item.price||0).toLocaleString(),490,y+ROW/2+4);
+    ctx.fillStyle='#2D5BE3'; ctx.font='bold 12px sans-serif';
+    ctx.fillText((item.qty*item.price).toLocaleString(),W-PAD,y+ROW/2+4);
+  });
+  ctx.strokeStyle='#E0E0E0'; ctx.lineWidth=0.5;
+  rows.forEach((_,i)=>{const y=HEADER+i*ROW;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();});
+  const fy=HEADER+rows.length*ROW;
+  ctx.fillStyle='#F2F0EB'; ctx.fillRect(0,fy,W,FOOTER);
+  ctx.strokeStyle='#B0AA9E'; ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,fy);ctx.lineTo(W,fy);ctx.stroke();
+  ctx.fillStyle='#1A1916'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('합계',PAD,fy+FOOTER/2+5);
+  ctx.fillStyle='#2D5BE3'; ctx.font='bold 14px sans-serif'; ctx.textAlign='right';
+  ctx.fillText(total.toLocaleString()+'원',W-PAD,fy+FOOTER/2+5);
+  const ny=fy+FOOTER;
+  ctx.fillStyle='#F2F0EB'; ctx.fillRect(0,ny,W,NAMING_H+PAD);
+  ctx.fillStyle='#6B6660'; ctx.font='11px monospace'; ctx.textAlign='center';
+  ctx.fillText(naming==='—'?'':naming,W/2,ny+NAMING_H/2+5);
+  return canvas.toDataURL('image/jpeg',0.85);
+}
+
+async function exportQuoteImage() {
+  if(!qItems.length){alert('부품이 없습니다.');return;}
+  const naming=getQNaming();
+  const b64=await _drawQuoteCanvas();
+  if(!b64)return;
+  const fname=(naming!=='—'&&naming)?naming+'.jpg':'견적서_'+today4()+'.jpg';
+  const link=document.createElement('a');
+  link.download=fname; link.href=b64; link.click();
+}
+
+function sendToKanban() {
+  if(!qItems.length){alert('부품이 없습니다.');return;}
+  const naming=getQNaming();
+  const d=document.getElementById('qDate')?.value||'';
+  const p=document.getElementById('qPerson')?.value||'';
+  const checked=[...(document.querySelectorAll('#qItemSel input:checked')||[])].map(el=>el.value);
+
+  // 이미지 먼저 생성 후 모달 열기
+  _drawQuoteCanvas().then(imgBase64=>{
+    showPage('main');
+    openNewModal();
+    document.getElementById('fNote').value='';
+    document.getElementById('fStatus').value='0';
+    if(d){document.getElementById('fDate').value=d;document.getElementById('fDate').classList.remove('invalid');}
+    if(p){selectedPerson=p;}
+    // 품목 선택 반영
+    if(checked.length){
+      selectedItems=checked.filter(v=>ITEMS.includes(v));
+      if(!selectedItems.length)selectedItems=[ITEMS[0]];
+    }
+    renderSegButtons();updatePreview();
+    // 이미지 첨부
+    if(imgBase64){pendingImages=[imgBase64];renderImgPreview();}
+  });
+}
+
+function renderQuote() { setQTab(qTab); renderQItems(); }
+
+function resetQuote() {
+  if(!confirm('부품 목록을 모두 초기화할까요?'))return;
+  qItems=[]; meshQty={};
+  renderQItems();
+  if(qTab==='mesh')renderMeshInput();
+}
+
+function copyQuote() {
+  if(!qItems.length){alert('부품이 없습니다.');return;}
+  const total=qItems.reduce((s,i)=>s+i.qty*i.price,0);
+  const lines=['[견적서]',''];
+  qItems.forEach(i=>{
+    const row = [i.name, i.spec, `${i.qty}개`, `${(i.qty*i.price).toLocaleString()}원`].filter(Boolean).join(' | ');
+    lines.push(row);
+  });
+  lines.push('','합계: '+total.toLocaleString()+'원');
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('클립보드에 복사됐습니다.')).catch(()=>alert(lines.join('\n')));
+}
 
 // 비밀번호
 const PW = '5586';
@@ -918,6 +1461,7 @@ if (sessionStorage.getItem('dclracks_auth') === '1') {
 } else {
   document.getElementById('lockInput').focus();
 }
+function render(){renderSummary();renderFilters();renderKanban();}
 </script>
 </body>
 </html>
