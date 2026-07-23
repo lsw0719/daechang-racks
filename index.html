@@ -625,8 +625,63 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 <!-- PRICE -->
 <div id="pricePage">
   <div class="price-wrap">
-    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">단가표</div>
-    <div style="display:flex;flex-direction:column;gap:20px;" id="priceContent"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:16px;font-weight:600;">단가표</div>
+      <button onclick="openPriceAddModal()" style="padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;">+ 단가 추가</button>
+    </div>
+    <!-- 필터 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+      <div>
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">품목</div>
+        <select id="priceCatSel" onchange="priceCat=this.value;priceSubCat='all';priceQuery='';renderPrice();" style="font-size:13px;padding:6px 10px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);color:var(--tx);min-width:120px;"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">구분</div>
+        <select id="priceSubCatSel" onchange="priceSubCat=this.value;priceQuery='';renderPriceTable();" style="font-size:13px;padding:6px 10px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);color:var(--tx);min-width:120px;"></select>
+      </div>
+      <div style="flex:1;min-width:160px;">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">규격 검색</div>
+        <input type="text" id="priceSearch" placeholder="예) 1800, 900×600..." oninput="priceQuery=this.value;renderPriceTable();" style="font-size:13px;padding:6px 10px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+      </div>
+    </div>
+    <!-- 테이블 -->
+    <div id="priceTableWrap"></div>
+  </div>
+</div>
+
+<!-- 단가 추가 모달 -->
+<div class="overlay" id="priceAddOverlay" onclick="if(event.target===this)closePriceAddModal()">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-hd">
+      <span class="modal-title" id="priceAddTitle">단가 추가</span>
+      <button class="modal-close" onclick="closePriceAddModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="fgroup">
+        <div class="flabel">품목</div>
+        <select id="paItem" onchange="updatePaSubItems()" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);"></select>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">구분</div>
+        <div style="display:flex;gap:6px;">
+          <select id="paSubCat" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;flex:1;background:var(--surface);color:var(--tx);"></select>
+          <input type="text" id="paSubCatNew" placeholder="직접입력" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;flex:1;background:var(--surface);color:var(--tx);">
+        </div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:3px;">드롭다운 선택 또는 새 구분 직접 입력</div>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">규격</div>
+        <input type="text" id="paSpec" placeholder="예) 1800, 900×600" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+      </div>
+      <div class="fgroup">
+        <div class="flabel">단가 (원)</div>
+        <input type="number" id="paPrice" placeholder="0" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="closePriceAddModal()">취소</button>
+      <button class="btn-primary" onclick="savePriceItem()">저장</button>
+    </div>
   </div>
 </div>
 
@@ -916,7 +971,7 @@ function setSS(s){
 async function loadAll(){
   setSS('saving');
   try{
-    const[c,cal]=await Promise.all([dbLoad(),calDbLoad()]);
+    const[c,cal,cp]=await Promise.all([dbLoad(),calDbLoad(),loadCustomPrices()]);
     c.forEach(x=>{if(!x.images)x.images=[];});
     cards=c;lastHash=cardsHash(c);
     calEvents=cal;calHash=calEvHash(cal);
@@ -1909,64 +1964,149 @@ const PRICE_DATA=[
 ];
 
 let priceQuery = '';
-let priceCat = PRICE_DATA[0].cat;
+let priceCat = '';
+let priceSubCat = 'all';
+let priceEditId = null;
+let customPrices = []; // Supabase에서 로드한 추가 단가
+
+// Supabase 단가 로드
+async function loadCustomPrices(){
+  try{
+    const r=await sbFetch('/rest/v1/price_data?order=updated_at.desc&select=id,data');
+    customPrices=r.map(x=>({id:x.id,...x.data}));
+  }catch(e){customPrices=[];}
+  return customPrices;
+}
+async function saveCustomPrice(item){
+  const{id,...data}=item;
+  await sbFetch('/rest/v1/price_data',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id,data,updated_at:new Date().toISOString()})});
+}
+async function deleteCustomPrice(id){
+  await sbFetch(`/rest/v1/price_data?id=eq.${id}`,{method:'DELETE'});
+}
+
+// 전체 단가 (기본 + 추가)
+function allPriceItems(){
+  const built=[];
+  PRICE_DATA.forEach(cat=>{
+    cat.items.forEach(item=>{
+      item.specs.forEach(s=>{
+        built.push({id:'built_'+cat.cat+'_'+item.name+'_'+s.spec, cat:cat.cat, subCat:item.name, spec:s.spec, price:s.price, builtin:true});
+      });
+    });
+  });
+  return [...built, ...customPrices];
+}
+
+// 카테고리 목록
+function getPriceCats(){ return [...new Set(allPriceItems().map(i=>i.cat))]; }
+function getPriceSubCats(cat){ return ['all',...new Set(allPriceItems().filter(i=>i.cat===cat).map(i=>i.subCat))]; }
 
 function renderPrice(){
-  const q = priceQuery.toLowerCase().trim();
-  const content = document.getElementById('priceContent');
-  const cat = PRICE_DATA.find(c=>c.cat===priceCat)||PRICE_DATA[0];
+  const cats=getPriceCats();
+  if(!priceCat||!cats.includes(priceCat)) priceCat=cats[0]||'';
 
-  const controls = `
-    <div style="position:sticky;top:0;background:var(--bg);padding:4px 0 12px;z-index:10;">
-      <div style="margin-bottom:8px;">
-        <div style="font-size:11px;color:var(--tx3);margin-bottom:4px;font-weight:500;letter-spacing:.04em;">품목</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${PRICE_DATA.map(c=>`<button onclick="priceCat='${escH(c.cat)}';priceQuery='';renderPrice();" style="padding:6px 14px;border-radius:20px;border:1px solid ${c.cat===priceCat?'var(--tx)':'var(--border-dark)'};background:${c.cat===priceCat?'var(--tx)':'var(--surface)'};color:${c.cat===priceCat?'#fff':'var(--tx2)'};font-family:var(--sans);font-size:13px;font-weight:${c.cat===priceCat?'500':'400'};cursor:pointer;">${escH(c.cat)}</button>`).join('')}
-        </div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--tx3);margin-bottom:4px;font-weight:500;letter-spacing:.04em;">규격 검색</div>
-        <input type="text" id="priceSearch" placeholder="예) 1800, 900×600..." value="${escH(priceQuery)}"
-          oninput="priceQuery=this.value;renderPriceTable();"
-          style="font-size:14px;padding:8px 13px;border:1px solid var(--border-dark);border-radius:6px;width:100%;background:var(--surface);color:var(--tx);">
-      </div>
-    </div>
-    <div id="priceTable"></div>`;
+  // 품목 드롭다운
+  const catSel=document.getElementById('priceCatSel');
+  if(catSel){ catSel.innerHTML=cats.map(c=>`<option value="${escH(c)}" ${c===priceCat?'selected':''}>${escH(c)}</option>`).join(''); }
 
-  content.innerHTML = controls;
+  // 구분 드롭다운
+  const subCats=getPriceSubCats(priceCat);
+  const subSel=document.getElementById('priceSubCatSel');
+  if(subSel){ subSel.innerHTML=subCats.map(s=>`<option value="${escH(s)}" ${s===priceSubCat?'selected':''}>${s==='all'?'전체 구분':escH(s)}</option>`).join(''); }
+
   renderPriceTable();
 }
 
 function renderPriceTable(){
-  const q = priceQuery.toLowerCase().trim();
-  const cat = PRICE_DATA.find(c=>c.cat===priceCat)||PRICE_DATA[0];
+  const q=priceQuery.toLowerCase().trim();
+  const items=allPriceItems().filter(i=>{
+    if(i.cat!==priceCat)return false;
+    if(priceSubCat!=='all'&&i.subCat!==priceSubCat)return false;
+    if(q&&!i.subCat.toLowerCase().includes(q)&&!i.spec.toLowerCase().includes(q))return false;
+    return true;
+  });
+  const hl=str=>q?str.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),'<mark style="background:#FEF08A;border-radius:2px;">$1</mark>'):escH(str);
+  const wrap=document.getElementById('priceTableWrap');
+  if(!wrap)return;
+  if(!items.length){wrap.innerHTML='<div style="text-align:center;padding:30px 0;font-size:13px;color:var(--tx3);">검색 결과가 없습니다.</div>';return;}
+  wrap.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+    <table class="price-table" style="width:100%;">
+      <thead><tr>
+        <th style="width:40px;">NO.</th>
+        <th>구분</th><th>규격</th>
+        <th style="text-align:right;">단가 (원)</th>
+        <th style="width:60px;"></th>
+      </tr></thead>
+      <tbody>${items.map((item,i)=>`<tr>
+        <td style="color:var(--tx3);font-size:11px;">${i+1}</td>
+        <td>${hl(item.subCat)}</td>
+        <td>${hl(item.spec)}</td>
+        <td style="text-align:right;font-family:var(--mono);">${item.price.toLocaleString()}</td>
+        <td style="text-align:center;">${!item.builtin?`<button onclick="editPriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">✏️</button><button onclick="deletePriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">×</button>`:''}
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
 
-  const filtered = cat.items.map(item=>{
-    const specs = q ? item.specs.filter(s=>
-      item.name.toLowerCase().includes(q)||s.spec.toLowerCase().includes(q)
-    ) : item.specs;
-    return specs.length ? {...item, specs} : null;
-  }).filter(Boolean);
+// 단가 추가 모달
+function openPriceAddModal(editId=null){
+  priceEditId=editId;
+  const cats=getPriceCats();
+  const paItem=document.getElementById('paItem');
+  paItem.innerHTML=[...cats,'기타'].map(c=>`<option value="${escH(c)}">${escH(c)}</option>`).join('');
+  paItem.value=priceCat||cats[0];
+  document.getElementById('priceAddTitle').textContent=editId?'단가 수정':'단가 추가';
 
-  const hl = str => q ? str.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark style="background:#FEF08A;border-radius:2px;">$1</mark>') : escH(str);
-
-  const tableEl = document.getElementById('priceTable');
-  if(!tableEl) return;
-
-  tableEl.innerHTML = filtered.length ? `
-    <table class="price-table">
-      <thead><tr><th>구분</th><th>규격</th><th style="text-align:right;">단가 (원)</th></tr></thead>
-      <tbody>${filtered.flatMap(item=>item.specs.map(s=>`<tr><td>${hl(item.name)}</td><td>${hl(s.spec)}</td><td style="text-align:right;font-family:var(--mono);">${s.price.toLocaleString()}</td></tr>`)).join('')}</tbody>
-    </table>` :
-    '<div style="text-align:center;padding:30px 0;font-size:13px;color:var(--tx3);">검색 결과가 없습니다.</div>';
-
-  // 포커스 유지
-  const inp = document.getElementById('priceSearch');
-  if(inp && document.activeElement !== inp){
-    inp.focus();
-    const len = inp.value.length;
-    inp.setSelectionRange(len, len);
+  if(editId){
+    const item=customPrices.find(x=>x.id===editId);
+    if(item){
+      paItem.value=item.cat;
+      updatePaSubItems();
+      document.getElementById('paSubCat').value=item.subCat;
+      document.getElementById('paSpec').value=item.spec;
+      document.getElementById('paPrice').value=item.price;
+    }
+  } else {
+    updatePaSubItems();
+    document.getElementById('paSubCatNew').value='';
+    document.getElementById('paSpec').value='';
+    document.getElementById('paPrice').value='';
   }
+  document.getElementById('priceAddOverlay').classList.add('open');
+}
+function closePriceAddModal(){ document.getElementById('priceAddOverlay').classList.remove('open'); }
+
+function updatePaSubItems(){
+  const cat=document.getElementById('paItem').value;
+  const subs=[...new Set(allPriceItems().filter(i=>i.cat===cat).map(i=>i.subCat))];
+  document.getElementById('paSubCat').innerHTML=subs.map(s=>`<option value="${escH(s)}">${escH(s)}</option>`).join('');
+}
+
+async function savePriceItem(){
+  const cat=document.getElementById('paItem').value.trim();
+  const subNew=document.getElementById('paSubCatNew').value.trim();
+  const subSel=document.getElementById('paSubCat').value;
+  const subCat=subNew||subSel;
+  const spec=document.getElementById('paSpec').value.trim();
+  const price=parseInt(document.getElementById('paPrice').value)||0;
+  if(!cat||!subCat||!spec||!price){alert('모든 항목을 입력하세요.');return;}
+  const item={id:priceEditId||genId(),cat,subCat,spec,price,builtin:false};
+  if(priceEditId){ customPrices=customPrices.map(x=>x.id===priceEditId?item:x); }
+  else { customPrices.push(item); }
+  closePriceAddModal();
+  renderPrice();
+  await saveCustomPrice(item);
+}
+
+function editPriceItem(id){ openPriceAddModal(id); }
+
+async function deletePriceItem(id){
+  if(!confirm('삭제할까요?'))return;
+  customPrices=customPrices.filter(x=>x.id!==id);
+  renderPrice();
+  await deleteCustomPrice(id);
 }
 
 // ════════════════════════════════════════
