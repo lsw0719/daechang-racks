@@ -330,6 +330,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
           <input type="text" id="nDestDetail" placeholder="상세 주소">
         </div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0;">
+        <div class="fgroup">
+          <div class="flabel">출고일자</div>
+          <input type="text" id="nShipDate" class="dinput" maxlength="4" placeholder="미정" oninput="onDI(this)" autocomplete="off">
+          <div style="font-size:10px;color:var(--tx3);margin-top:2px;">월일 4자리 또는 공란(미정)</div>
+        </div>
+      </div>
       <div class="fgroup">
         <div class="flabel">건 네이밍 (자동생성)</div>
         <div class="npreview" id="nNamePreview">—</div>
@@ -410,16 +417,34 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
             <div class="fgroup"><div class="flabel">단수</div><input type="number" id="nHLev" placeholder="3" min="1" value="3" style="font-size:13px;"></div>
             <div class="fgroup"><div class="flabel">대수</div><input type="number" id="nHCnt" placeholder="1" min="1" value="1" style="font-size:13px;"></div>
           </div>
-          <div class="fgroup" style="margin-bottom:12px;">
-            <div class="flabel">구분</div>
-            <div style="display:flex;gap:8px;">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
-                <input type="radio" name="nHForm" value="single" checked> 독립형
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
-                <input type="radio" name="nHForm" value="connect"> 연결형
-              </label>
+          <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+            <div class="fgroup" style="flex:1;">
+              <div class="flabel">구분</div>
+              <div style="display:flex;gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
+                  <input type="radio" name="nHForm" value="single" checked> 독립형
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
+                  <input type="radio" name="nHForm" value="connect"> 연결형
+                </label>
+              </div>
             </div>
+            <div class="fgroup">
+              <div class="flabel">색상</div>
+              <div style="display:flex;gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
+                  <input type="radio" name="nHColor" value="normal" checked onchange="toggleSetup('H',false)"> 일반
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid #333;border-radius:4px;background:#222;color:#fff;">
+                  <input type="radio" name="nHColor" value="black" onchange="toggleSetup('H',true)"> 블랙
+                </label>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;" id="nHSetupLabel">
+              <input type="checkbox" id="nHSetup" disabled> <span id="nHSetupSpan" style="color:var(--tx3);">세팅비 추가 (블랙 선택 시 활성화 / 100,000원)</span>
+            </label>
           </div>
           <button onclick="nCalcAndAdd('heavy')" style="padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ 부품 목록에 추가</button>
         </div>
@@ -433,16 +458,34 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
             <div class="fgroup"><div class="flabel">단수</div><input type="number" id="nLLev" placeholder="3" min="1" value="3" style="font-size:13px;"></div>
             <div class="fgroup"><div class="flabel">대수</div><input type="number" id="nLCnt" placeholder="1" min="1" value="1" style="font-size:13px;"></div>
           </div>
-          <div class="fgroup" style="margin-bottom:12px;">
-            <div class="flabel">구분</div>
-            <div style="display:flex;gap:8px;">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
-                <input type="radio" name="nLForm" value="single" checked> 독립형
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
-                <input type="radio" name="nLForm" value="connect"> 연결형
-              </label>
+          <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+            <div class="fgroup" style="flex:1;">
+              <div class="flabel">구분</div>
+              <div style="display:flex;gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
+                  <input type="radio" name="nLForm" value="single" checked> 독립형
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
+                  <input type="radio" name="nLForm" value="connect"> 연결형
+                </label>
+              </div>
             </div>
+            <div class="fgroup">
+              <div class="flabel">색상</div>
+              <div style="display:flex;gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);">
+                  <input type="radio" name="nLColor" value="normal" checked onchange="toggleSetup('L',false)"> 일반
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 16px;border:1px solid #333;border-radius:4px;background:#222;color:#fff;">
+                  <input type="radio" name="nLColor" value="black" onchange="toggleSetup('L',true)"> 블랙
+                </label>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;">
+              <input type="checkbox" id="nLSetup" disabled> <span id="nLSetupSpan" style="color:var(--tx3);">세팅비 추가 (블랙 선택 시 활성화 / 100,000원)</span>
+            </label>
           </div>
           <button onclick="nCalcAndAdd('light')" style="padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ 부품 목록에 추가</button>
         </div>
@@ -492,6 +535,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
     <!-- 저장 버튼 -->
     <div style="display:flex;justify-content:flex-end;gap:8px;">
       <button onclick="nReset();nResetForm();" class="btn-sec">초기화</button>
+      <button onclick="nExportImage()" style="padding:10px 20px;background:#059669;color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;">🖼 이미지 추출</button>
       <button onclick="nSaveCard()" class="btn-primary" style="padding:10px 28px;font-size:14px;">저장</button>
     </div>
   </div>
@@ -693,6 +737,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
         <div class="seg" id="segDest"></div>
         <div id="destDetailWrap" style="display:none;margin-top:5px;"><input type="text" id="fDestDetail" placeholder="상세 주소"></div>
       </div>
+      <div class="fgroup">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div class="flabel" style="margin:0;">출고일자</div>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--tx2);cursor:pointer;">
+            <input type="checkbox" id="fShipTBD" onchange="toggleShipTBD()" style="width:auto;"> 미정
+          </label>
+        </div>
+        <input type="text" id="fShipDate" class="dinput" maxlength="4" placeholder="0710" oninput="onDI(this)" autocomplete="off">
+      </div>
 
       <!-- 부품 목록 -->
       <div class="parts-section">
@@ -757,6 +810,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
     </div>
     <div class="modal-foot">
       <button class="btn-sec" onclick="closeModal()">취소</button>
+      <button class="btn-sec" onclick="exportModalImage()" style="background:#059669;color:#fff;border-color:#059669;">🖼 이미지 추출</button>
       <button class="btn-primary" onclick="saveCard()">저장</button>
     </div>
   </div>
@@ -1155,6 +1209,9 @@ function openNewModal(){
   document.getElementById('fDestDetail').value='';
   document.getElementById('fNote').value='';
   document.getElementById('fStatus').value='0';
+  document.getElementById('fShipDate').value='';document.getElementById('fShipDate').classList.remove('inv');
+  document.getElementById('fShipDate').disabled=false;document.getElementById('fShipDate').style.opacity='1';
+  document.getElementById('fShipTBD').checked=false;
   selDest='스피드랙';renderSegDest();renderImgPrev();renderParts();updPrev();
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -1168,6 +1225,12 @@ function openEditModal(id){
   document.getElementById('fDestDetail').value=c.destDetail||'';
   document.getElementById('fNote').value=c.note||'';
   document.getElementById('fStatus').value=String(Math.min(c.status,2));
+  const tbd=c.shipDate==='미정';
+  document.getElementById('fShipDate').value=tbd?'':c.shipDate||'';
+  document.getElementById('fShipDate').classList.remove('inv');
+  document.getElementById('fShipTBD').checked=tbd;
+  document.getElementById('fShipDate').disabled=tbd;
+  document.getElementById('fShipDate').style.opacity=tbd?'0.4':'1';
   selDest=c.dest||'스피드랙';renderSegDest();renderImgPrev();renderParts();updPrev();
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -1186,6 +1249,7 @@ async function saveCard(){
     date,person,item,
     dest:selDest,
     destDetail:selDest==='직송'?document.getElementById('fDestDetail').value.trim():'',
+    shipDate:document.getElementById('fShipTBD').checked?'미정':document.getElementById('fShipDate').value,
     note:document.getElementById('fNote').value.trim(),
     images:[...pImgs],
     parts:[...parts],
@@ -1373,6 +1437,15 @@ function setNTab(t){
   nUpdPrev();
 }
 
+function toggleSetup(type, isBlack){
+  const cb=document.getElementById('n'+type+'Setup');
+  const sp=document.getElementById('n'+type+'SetupSpan');
+  if(!cb)return;
+  cb.disabled=!isBlack;
+  if(sp)sp.style.color=isBlack?'var(--tx)':'var(--tx3)';
+  if(!isBlack)cb.checked=false;
+}
+
 function toggleMCut(){
   document.getElementById('nMCutPanel').style.display=
     document.getElementById('nMCut').checked?'block':'none';
@@ -1478,13 +1551,24 @@ function nCalcAndAdd(type){
     const form=nGetForm(formName);
     if(!w||!d||!h){alert('가로, 세로, 높이를 입력하세요.');return;}
 
+    // 블랙 여부 및 단가 배율
+    const colorName = type==='heavy'?'nHColor':type==='light'?'nLColor':null;
+    const isBlack = colorName ? (document.querySelector(`input[name="${colorName}"]:checked`)?.value==='black') : false;
+    const priceRate = isBlack ? (type==='heavy'?1.08:1.06) : 1;
+    const colorSuffix = isBlack ? '/블랙' : '';
+
+    // 세팅비 여부
+    const setupId = type==='heavy'?'nHSetup':type==='light'?'nLSetup':null;
+    const addSetup = setupId ? document.getElementById(setupId).checked : false;
+
     const pillar=form==='single'?4:2;
     const pfx=type==='zinc'?'아연도금랙':type==='heavy'?'중량랙':'경량랙';
     const cat=type==='zinc'?'아연도금랙':type==='heavy'?'중량랙':'경량랙';
 
     const add=(name,spec,qty)=>{
-      const price=lookupPrice(name,spec,cat);
-      newParts.push({id:genId(),name,spec,qty,price,editable:true});
+      const basePrice=lookupPrice(name,spec,cat);
+      const price=Math.round(basePrice*priceRate);
+      newParts.push({id:genId(),name:name+colorSuffix,spec,qty,price,editable:true});
     };
 
     add(`${pfx}/규격/기둥`,String(h),pillar*cnt);
@@ -1500,6 +1584,11 @@ function nCalcAndAdd(type){
     add(`${pfx}/부속/안전좌`,'50*50',4*cnt);
     add(`${pfx}/부속/안전핀`,'4파이',8*cnt);
     add(`${pfx}/규격/선반`,`${w}*${d}`,lev*cnt);
+
+    // 세팅비
+    if(addSetup){
+      newParts.push({id:genId(),name:`${pfx}/세팅비`,spec:'20대 미만',qty:1,price:100000,editable:true});
+    }
   }
 
   // 합산
@@ -1566,6 +1655,103 @@ function nRenderParts(){
   nUpdateTotal();
 }
 
+async function exportModalImage(){
+  if(!parts.length){alert('부품이 없습니다.');return;}
+  const nameEl=document.getElementById('namePreview');
+  const naming=nameEl?nameEl.textContent:'견적서';
+  const rows=parts.filter(p=>p.name);
+  const total=rows.reduce((s,p)=>s+p.qty*p.price,0);
+  const W=640,PAD=16,HEADER=44,ROW=30,FOOTER=44,BOTTOM=34;
+  const H=HEADER+rows.length*ROW+FOOTER+BOTTOM;
+  const canvas=document.createElement('canvas');
+  const dpr=window.devicePixelRatio||2;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1A1916';ctx.fillRect(0,0,W,HEADER);
+  ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+  [{label:'품명',x:150},{label:'규격',x:310},{label:'수량',x:395},{label:'단가',x:470},{label:'합계',x:560}]
+    .forEach(c=>ctx.fillText(c.label,c.x,HEADER/2+5));
+  rows.forEach((p,i)=>{
+    const y=HEADER+i*ROW;
+    ctx.fillStyle=i%2===0?'#F9F9F7':'#fff';ctx.fillRect(0,y,W,ROW);
+    ctx.strokeStyle='#E8E5E0';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    ctx.fillStyle='#1A1916';ctx.font='12px sans-serif';ctx.textAlign='left';
+    ctx.save();ctx.beginPath();ctx.rect(PAD,y,250,ROW);ctx.clip();
+    ctx.fillText(p.name||'—',PAD,y+ROW/2+4);ctx.restore();
+    ctx.fillText(p.spec||'—',258,y+ROW/2+4);
+    ctx.textAlign='right';
+    ctx.fillText(p.qty+'개',415,y+ROW/2+4);
+    ctx.fillText((p.price||0).toLocaleString(),500,y+ROW/2+4);
+    ctx.fillStyle='#2D5BE3';ctx.font='bold 12px sans-serif';
+    ctx.fillText((p.qty*p.price).toLocaleString(),W-PAD,y+ROW/2+4);
+  });
+  const fy=HEADER+rows.length*ROW;
+  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,fy,W,FOOTER);
+  ctx.strokeStyle='#B0AA9E';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,fy);ctx.lineTo(W,fy);ctx.stroke();
+  ctx.fillStyle='#1A1916';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('합계',PAD,fy+FOOTER/2+5);
+  ctx.fillStyle='#2D5BE3';ctx.font='bold 15px sans-serif';ctx.textAlign='right';
+  ctx.fillText(total.toLocaleString()+'원',W-PAD,fy+FOOTER/2+5);
+  const ny=fy+FOOTER;
+  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,ny,W,BOTTOM);
+  ctx.fillStyle='#6B6660';ctx.font='11px monospace';ctx.textAlign='center';
+  ctx.fillText(naming==='—'?'':naming,W/2,ny+BOTTOM/2+4);
+  const fname=(naming&&naming!=='—')?naming+'.jpg':'견적서_'+today4()+'.jpg';
+  const link=document.createElement('a');
+  link.download=fname;link.href=canvas.toDataURL('image/jpeg',0.88);link.click();
+}
+
+async function nExportImage(){
+  if(!nParts.length){alert('부품이 없습니다.');return;}
+  const naming = document.getElementById('nNamePreview').textContent||'견적서';
+  const rows = nParts.filter(p=>p.name);
+  const total = rows.reduce((s,p)=>s+p.qty*p.price,0);
+  const W=640,PAD=16,HEADER=44,ROW=30,FOOTER=44,BOTTOM=34;
+  const H=HEADER+rows.length*ROW+FOOTER+BOTTOM;
+  const canvas=document.createElement('canvas');
+  const dpr=window.devicePixelRatio||2;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1A1916';ctx.fillRect(0,0,W,HEADER);
+  ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+  [{label:'품명',x:150},{label:'규격',x:310},{label:'수량',x:395},{label:'단가',x:470},{label:'합계',x:560}]
+    .forEach(c=>ctx.fillText(c.label,c.x,HEADER/2+5));
+  rows.forEach((p,i)=>{
+    const y=HEADER+i*ROW;
+    ctx.fillStyle=i%2===0?'#F9F9F7':'#fff';ctx.fillRect(0,y,W,ROW);
+    ctx.strokeStyle='#E8E5E0';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    ctx.fillStyle='#1A1916';ctx.font='12px sans-serif';ctx.textAlign='left';
+    ctx.save();ctx.beginPath();ctx.rect(PAD,y,250,ROW);ctx.clip();
+    ctx.fillText(p.name||'—',PAD,y+ROW/2+4);ctx.restore();
+    ctx.fillText(p.spec||'—',258,y+ROW/2+4);
+    ctx.textAlign='right';
+    ctx.fillText(p.qty+'개',415,y+ROW/2+4);
+    ctx.fillText((p.price||0).toLocaleString(),500,y+ROW/2+4);
+    ctx.fillStyle='#2D5BE3';ctx.font='bold 12px sans-serif';
+    ctx.fillText((p.qty*p.price).toLocaleString(),W-PAD,y+ROW/2+4);
+  });
+  const fy=HEADER+rows.length*ROW;
+  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,fy,W,FOOTER);
+  ctx.strokeStyle='#B0AA9E';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,fy);ctx.lineTo(W,fy);ctx.stroke();
+  ctx.fillStyle='#1A1916';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('합계',PAD,fy+FOOTER/2+5);
+  ctx.fillStyle='#2D5BE3';ctx.font='bold 15px sans-serif';ctx.textAlign='right';
+  ctx.fillText(total.toLocaleString()+'원',W-PAD,fy+FOOTER/2+5);
+  const ny=fy+FOOTER;
+  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,ny,W,BOTTOM);
+  ctx.fillStyle='#6B6660';ctx.font='11px monospace';ctx.textAlign='center';
+  ctx.fillText(naming==='—'?'':naming,W/2,ny+BOTTOM/2+4);
+  const fname=(naming&&naming!=='—')?naming+'.jpg':'견적서_'+today4()+'.jpg';
+  const link=document.createElement('a');
+  link.download=fname;link.href=canvas.toDataURL('image/jpeg',0.88);link.click();
+}
+
 async function nSaveCard(){
   const date=document.getElementById('nDate').value;
   if(!isVD(date)){alert('날짜를 4자리로 입력하세요.');return;}
@@ -1574,10 +1760,12 @@ async function nSaveCard(){
   const itemName=nTab==='zinc'?'아연도금랙':nTab==='mesh'?'메쉬망':nTab==='heavy'?'중량랙':'경량랙';
   const dest=document.getElementById('nDest').value;
   const destDetail=dest==='직송'?document.getElementById('nDestDetail').value.trim():'';
+  const shipDateVal = document.getElementById('nShipDate').value;
   const card={
     id:genId(),
     name:`${fmtD(date)}_${itemName}_${person}`,
     date,person,item:itemName,dest,destDetail,
+    shipDate: shipDateVal ? shipDateVal : '미정',
     note:document.getElementById('nNote').value.trim(),
     images:[],
     parts:[...nParts],
@@ -1587,6 +1775,7 @@ async function nSaveCard(){
   cards.unshift(card);
   nParts=[];nRenderParts();
   document.getElementById('nNote').value='';
+  document.getElementById('nShipDate').value='';
   alert('저장됐습니다!');
   showPage('kanban');
   await saveCardDb(card);
@@ -1738,10 +1927,19 @@ function renderPrice(){
       <div>
         <div style="font-size:11px;color:var(--tx3);margin-bottom:4px;font-weight:500;letter-spacing:.04em;">규격 검색</div>
         <input type="text" id="priceSearch" placeholder="예) 1800, 900×600..." value="${escH(priceQuery)}"
-          oninput="priceQuery=this.value;renderPrice();"
+          oninput="priceQuery=this.value;renderPriceTable();"
           style="font-size:14px;padding:8px 13px;border:1px solid var(--border-dark);border-radius:6px;width:100%;background:var(--surface);color:var(--tx);">
       </div>
-    </div>`;
+    </div>
+    <div id="priceTable"></div>`;
+
+  content.innerHTML = controls;
+  renderPriceTable();
+}
+
+function renderPriceTable(){
+  const q = priceQuery.toLowerCase().trim();
+  const cat = PRICE_DATA.find(c=>c.cat===priceCat)||PRICE_DATA[0];
 
   const filtered = cat.items.map(item=>{
     const specs = q ? item.specs.filter(s=>
@@ -1752,14 +1950,23 @@ function renderPrice(){
 
   const hl = str => q ? str.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark style="background:#FEF08A;border-radius:2px;">$1</mark>') : escH(str);
 
-  const table = filtered.length ? `
+  const tableEl = document.getElementById('priceTable');
+  if(!tableEl) return;
+
+  tableEl.innerHTML = filtered.length ? `
     <table class="price-table">
       <thead><tr><th>구분</th><th>규격</th><th style="text-align:right;">단가 (원)</th></tr></thead>
       <tbody>${filtered.flatMap(item=>item.specs.map(s=>`<tr><td>${hl(item.name)}</td><td>${hl(s.spec)}</td><td style="text-align:right;font-family:var(--mono);">${s.price.toLocaleString()}</td></tr>`)).join('')}</tbody>
     </table>` :
     '<div style="text-align:center;padding:30px 0;font-size:13px;color:var(--tx3);">검색 결과가 없습니다.</div>';
 
-  content.innerHTML = controls + table;
+  // 포커스 유지
+  const inp = document.getElementById('priceSearch');
+  if(inp && document.activeElement !== inp){
+    inp.focus();
+    const len = inp.value.length;
+    inp.setSelectionRange(len, len);
+  }
 }
 
 // ════════════════════════════════════════
