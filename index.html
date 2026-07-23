@@ -1567,7 +1567,7 @@ function nCalcAndAdd(type){
 
     const add=(name,spec,qty)=>{
       const basePrice=lookupPrice(name,spec,cat);
-      const price=Math.round(basePrice*priceRate);
+      const price=Math.round(Math.round(basePrice*priceRate)/10)*10;
       newParts.push({id:genId(),name:name+colorSuffix,spec,qty,price,editable:true});
     };
 
