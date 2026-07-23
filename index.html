@@ -441,11 +441,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
               </div>
             </div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;">
-            <label style="display:flex;align-items:center;gap:7px;font-size:13px;" id="nHSetupLabel">
-              <input type="checkbox" id="nHSetup" disabled> <span id="nHSetupSpan" style="color:var(--tx3);">세팅비 추가 (블랙 선택 시 활성화 / 100,000원)</span>
-            </label>
-          </div>
           <button onclick="nCalcAndAdd('heavy')" style="padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ 부품 목록에 추가</button>
         </div>
 
@@ -481,11 +476,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
                 </label>
               </div>
             </div>
-          </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;">
-            <label style="display:flex;align-items:center;gap:7px;font-size:13px;">
-              <input type="checkbox" id="nLSetup" disabled> <span id="nLSetupSpan" style="color:var(--tx3);">세팅비 추가 (블랙 선택 시 활성화 / 100,000원)</span>
-            </label>
           </div>
           <button onclick="nCalcAndAdd('light')" style="padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ 부품 목록에 추가</button>
         </div>
@@ -1557,9 +1547,9 @@ function nCalcAndAdd(type){
     const priceRate = isBlack ? (type==='heavy'?1.08:1.06) : 1;
     const colorSuffix = isBlack ? '/블랙' : '';
 
-    // 세팅비 여부
-    const setupId = type==='heavy'?'nHSetup':type==='light'?'nLSetup':null;
-    const addSetup = setupId ? document.getElementById(setupId).checked : false;
+    // 세팅비 제거됨
+    const setupId = null;
+    const addSetup = false;
 
     const pillar=form==='single'?4:2;
     const pfx=type==='zinc'?'아연도금랙':type==='heavy'?'중량랙':'경량랙';
@@ -1567,6 +1557,16 @@ function nCalcAndAdd(type){
 
     const add=(name,spec,qty)=>{
       const basePrice=lookupPrice(name,spec,cat);
+      // 안전핀: 블랙 표기 없이 기본 단가
+      if(name.includes('안전핀')){
+        newParts.push({id:genId(),name,spec,qty,price:basePrice,editable:true});
+        return;
+      }
+      // 안전좌: 블랙 표기하되 단가는 기본
+      if(name.includes('안전좌')){
+        newParts.push({id:genId(),name:name+colorSuffix,spec,qty,price:basePrice,editable:true});
+        return;
+      }
       const price=Math.round(Math.round(basePrice*priceRate)/10)*10;
       newParts.push({id:genId(),name:name+colorSuffix,spec,qty,price,editable:true});
     };
