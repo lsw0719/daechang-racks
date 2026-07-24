@@ -409,6 +409,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
             <button onclick="nCalcAndAdd('mesh')" style="padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ 메쉬망 추가</button>
             <button onclick="nAddMeshClip()" style="padding:9px 20px;background:var(--surface);color:var(--tx2);border:1px solid var(--border-dark);border-radius:4px;font-size:13px;cursor:pointer;font-family:var(--sans);">+ 클립 추가</button>
           </div>
+        </div><!-- /ninput-mesh -->
+
+        <!-- 중량랙 -->
         <div id="ninput-heavy" style="display:none;">
           <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;">
             <div class="fgroup"><div class="flabel">가로 (mm)</div><input type="number" id="nHW" placeholder="900" min="1" style="font-size:13px;"></div>
@@ -1573,7 +1576,7 @@ function setAFP(v){afPerson=v;renderArchive();}
 let nTab = 'zinc';
 let nParts = [];
 
-function setNTab(t){
+window.setNTab = function setNTab(t){
   nTab = t;
   ['zinc','mesh','heavy','light'].forEach(k=>{
     document.getElementById('ntab-'+k).className='ntab-btn'+(k===t?' active':'');
