@@ -485,6 +485,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
       </div>
     </div>
 
+    <!-- 입력 항목 리스트 -->
+    <div id="nInputList" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:16px;overflow:hidden;">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--tx2);">입력 항목</div>
+      <div id="nInputListItems" style="padding:8px 12px;display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
     <!-- 부품 목록 -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;">
       <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
@@ -1585,7 +1591,30 @@ window.setNTab = function setNTab(t){
   nUpdPrev();
 }
 
-function nZFormChange(){} // 아연도금랙 독립/연결 변경 (현재 세팅비 없음)
+let nInputItems = []; // [{id, label}]
+
+function nAddInputItem(label){
+  const id = genId();
+  nInputItems.push({id, label});
+  nRenderInputList();
+}
+function nRemoveInputItem(id){
+  nInputItems = nInputItems.filter(x=>x.id!==id);
+  nRenderInputList();
+}
+function nRenderInputList(){
+  const wrap = document.getElementById('nInputList');
+  const list = document.getElementById('nInputListItems');
+  if(!wrap||!list) return;
+  if(!nInputItems.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  const TYPE_COLOR = {zinc:'#2D5BE3',mesh:'#059669',heavy:'#b45309',light:'#7c3aed'};
+  list.innerHTML = nInputItems.map(item=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-radius:5px;">
+      <span style="flex:1;font-size:12px;color:var(--tx);">${escH(item.label)}</span>
+      <button onclick="nRemoveInputItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 2px;">×</button>
+    </div>`).join('');
+} // 아연도금랙 독립/연결 변경 (현재 세팅비 없음)
 function toggleSetup(type, isBlack){
   const cb=document.getElementById('n'+type+'Setup');
   const sp=document.getElementById('n'+type+'SetupSpan');
@@ -1768,9 +1797,32 @@ function nCalcAndAdd(type){
   });
   nRenderParts();
   nUpdPrev();
-}
 
-// 클립 추가
+  // 입력 항목 라벨 생성
+  if(type==='mesh'){
+    const h=parseInt(document.getElementById('nMH').value)||0;
+    const w=parseInt(document.getElementById('nMW').value)||0;
+    const cnt=parseInt(document.getElementById('nMCnt').value)||1;
+    const isCut=document.getElementById('nMCut').checked;
+    nAddInputItem(`메쉬망 ${h}×${w} ${cnt}장${isCut?' (절단)':''}`);
+  } else {
+    const ids={zinc:['nZW','nZD','nZH','nZLev','nZCnt','nZForm'],
+               heavy:['nHW','nHD','nHH','nHLev','nHCnt','nHForm'],
+               light:['nLW','nLD','nLH','nLLev','nLCnt','nLForm']};
+    const [wId,dId,hId,levId,cntId,formName]=ids[type];
+    const w=parseInt(document.getElementById(wId).value)||0;
+    const d=parseInt(document.getElementById(dId).value)||0;
+    const h=parseInt(document.getElementById(hId).value)||0;
+    const lev=parseInt(document.getElementById(levId).value)||1;
+    const cnt=parseInt(document.getElementById(cntId).value)||1;
+    const form=nGetForm(formName);
+    const typeName=type==='zinc'?'아연도금':type==='heavy'?'중량':type==='light'?'경량':'';
+    const formName2=form==='single'?'독립형':'연결형';
+    const colorName=type==='heavy'?'nHColor':type==='light'?'nLColor':null;
+    const isBlack=colorName?(document.querySelector(`input[name="${colorName}"]:checked`)?.value==='black'):false;
+    nAddInputItem(`${typeName} ${formName2}${isBlack?' 블랙':''} / ${h}H × ${w}W × ${d}D / ${lev}단 / ${cnt}대`);
+  }
+}
 function nAddMeshClip(){
   const cnt = parseInt(document.getElementById('nMCnt').value)||1;
   mergeNParts([{id:genId(),name:'철망/부속/클립',spec:'',qty:cnt,price:50,editable:true}]);
@@ -1791,7 +1843,7 @@ function nAddEmpty(){
   setTimeout(()=>{const els=document.querySelectorAll('.np-name');if(els.length)els[els.length-1].focus();},50);
 }
 
-function nReset(){if(!confirm('부품 목록을 초기화할까요?'))return;nParts=[];nRenderParts();}
+function nReset(){if(!confirm('부품 목록을 초기화할까요?'))return;nParts=[];nInputItems=[];nRenderParts();nRenderInputList();}
 function nResetForm(){
   document.getElementById('nDate').value='';
   document.getElementById('nPerson').value='';
