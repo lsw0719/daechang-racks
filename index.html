@@ -405,10 +405,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
               </div>
             </div>
           </div>
-          <button onclick="nCalcAndAdd('mesh')" style="padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ 부품 목록에 추가</button>
-        </div>
-
-        <!-- 중량랙 -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="nCalcAndAdd('mesh')" style="padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);">+ 메쉬망 추가</button>
+            <button onclick="nAddMeshClip()" style="padding:9px 20px;background:var(--surface);color:var(--tx2);border:1px solid var(--border-dark);border-radius:4px;font-size:13px;cursor:pointer;font-family:var(--sans);">+ 클립 추가</button>
+          </div>
         <div id="ninput-heavy" style="display:none;">
           <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;">
             <div class="fgroup"><div class="flabel">가로 (mm)</div><input type="number" id="nHW" placeholder="900" min="1" style="font-size:13px;"></div>
@@ -499,7 +499,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
               <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;">규격</th>
               <th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border);font-weight:600;width:100px;">수량</th>
               <th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);font-weight:600;">단가</th>
-              <th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);font-weight:600;">금액</th>
+              <th style="padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);font-weight:600;">판매가</th>
               <th style="padding:8px 12px;border-bottom:1px solid var(--border);width:30px;"></th>
             </tr>
           </thead>
@@ -1130,7 +1130,6 @@ function calcParts(type,raw,qty,form){
 
 // 단가 자동 조회
 function lookupPrice(name, spec, catHint=''){
-  // 공용받침 → 선반받침으로 매핑
   const lookupName = name.includes('공용받침') ? name.replace('공용받침','선반받침') : name;
   const targets = catHint
     ? PRICE_DATA.filter(c=>c.cat.includes(catHint) || catHint.includes(c.cat))
@@ -1139,12 +1138,24 @@ function lookupPrice(name, spec, catHint=''){
   for(const cat of all){
     for(const item of cat.items){
       if(lookupName.includes(item.name)||item.name.includes(lookupName.split('/').pop()||lookupName)){
-        const specNorm=spec.replace(/[×*]/g,'×');
-        const found=item.specs.find(s=>s.spec===specNorm||s.spec===spec||spec.includes(s.spec)||s.spec.includes(spec));
+        const specNorm=spec.replace(/[*]/g,'×');
+        // 선반(가로×깊이 형태)은 정확히 일치하는 것만 매칭
+        if(specNorm.includes('×')||spec.includes('*')){
+          const found=item.specs.find(s=>{
+            const sn=s.spec.replace(/[*]/g,'×');
+            return sn===specNorm || s.spec===spec;
+          });
+          if(found)return found.price;
+          continue; // × 포함인데 매칭 안 되면 다른 item으로
+        }
+        // 숫자 하나짜리 규격 (기둥높이, 받침깊이 등)
+        const found=item.specs.find(s=>s.spec===spec||s.spec===specNorm);
         if(found)return found.price;
         const specNum=spec.replace(/[^0-9]/g,'');
-        const match=item.specs.find(s=>s.spec.replace(/[^0-9]/g,'')===specNum);
-        if(match)return match.price;
+        if(specNum.length<=4){ // 짧은 숫자만 fuzzy 매칭
+          const match=item.specs.find(s=>s.spec.replace(/[^0-9]/g,'')===specNum&&!s.spec.includes('×')&&!s.spec.includes('*'));
+          if(match)return match.price;
+        }
       }
     }
   }
@@ -1640,14 +1651,14 @@ function nCalcAndAdd(type){
 
     const add=(name,spec,qty)=>{
       const basePrice=lookupPrice(name,spec,cat);
-      // 안전핀: 블랙 표기 없이 기본 단가
+      // 안전핀: 품명 변경, 블랙 표기 없이 기본 단가
       if(name.includes('안전핀')){
-        newParts.push({id:genId(),name,spec,qty,price:basePrice,editable:true});
+        newParts.push({id:genId(),name:`${pfx}/부속/안전핀(경중량랙공용)`,spec:'4파이',qty,price:70,editable:true});
         return;
       }
-      // 안전좌: 블랙 표기하되 단가는 기본
+      // 안전좌: 블랙 표기하되 단가 120원 고정
       if(name.includes('안전좌')){
-        newParts.push({id:genId(),name:name+colorSuffix,spec,qty,price:basePrice,editable:true});
+        newParts.push({id:genId(),name:name+colorSuffix,spec,qty,price:120,editable:true});
         return;
       }
       const price=Math.round(Math.round(basePrice*priceRate)/10)*10;
@@ -1680,8 +1691,32 @@ function nCalcAndAdd(type){
     if(ex) ex.qty+=np.qty;
     else nParts.push(np);
   });
+  // 순서 정렬: 기둥 > 전면빔 > 받침류 > 안전좌 > 안전핀 > 기타부속 > 선반 > 클립
+  const PART_ORDER=['기둥','전면빔','상부받침','선반받침','공용받침','안전좌','안전핀','망치','선반','클립'];
+  nParts.sort((a,b)=>{
+    const ai=PART_ORDER.findIndex(o=>a.name.includes(o));
+    const bi=PART_ORDER.findIndex(o=>b.name.includes(o));
+    const av=ai===-1?PART_ORDER.length:ai;
+    const bv=bi===-1?PART_ORDER.length:bi;
+    if(av!==bv)return av-bv;
+    return String(a.spec).localeCompare(String(b.spec),undefined,{numeric:true});
+  });
   nRenderParts();
   nUpdPrev();
+}
+
+// 클립 추가
+function nAddMeshClip(){
+  const cnt = parseInt(document.getElementById('nMCnt').value)||1;
+  mergeNParts([{id:genId(),name:'철망/부속/클립',spec:'',qty:cnt,price:50,editable:true}]);
+  nRenderParts(); nUpdPrev();
+}
+
+function mergeNParts(newParts){
+  newParts.forEach(np=>{
+    const ex=nParts.find(p=>p.name===np.name&&p.spec===np.spec);
+    if(ex) ex.qty+=np.qty; else nParts.push(np);
+  });
 }
 
 function nAddEmpty(){
@@ -1977,7 +2012,13 @@ const PRICE_DATA=[
     {name:'선반받침',specs:[{spec:'300',price:480},{spec:'450',price:680},{spec:'600',price:810}]},
     {name:'공용받침',specs:[{spec:'300',price:480},{spec:'450',price:680},{spec:'600',price:810}]},
     {name:'전면빔',specs:[{spec:'700',price:1500},{spec:'900',price:1800},{spec:'1000',price:2350},{spec:'1200',price:2350},{spec:'1500',price:2900}]},
-    {name:'선반',specs:[{spec:'700×300',price:3400},{spec:'700×450',price:4500},{spec:'700×600',price:6100},{spec:'900×300',price:3800},{spec:'900×450',price:4800},{spec:'900×600',price:6600},{spec:'1000×300',price:4900},{spec:'1000×450',price:6300},{spec:'1000×600',price:8800},{spec:'1200×300',price:4900},{spec:'1200×450',price:6300},{spec:'1200×600',price:8800},{spec:'1500×300',price:6000},{spec:'1500×450',price:7600},{spec:'1500×600',price:11190}]},
+    {name:'선반',specs:[
+      {spec:'700×300',price:3400},{spec:'700×450',price:4500},{spec:'700×600',price:6100},
+      {spec:'900×300',price:3800},{spec:'900×450',price:4800},{spec:'900×600',price:6600},
+      {spec:'1000×300',price:4900},{spec:'1000×450',price:6300},{spec:'1000×600',price:8800},
+      {spec:'1200×300',price:4900},{spec:'1200×450',price:6300},{spec:'1200×600',price:8800},
+      {spec:'1500×300',price:6000},{spec:'1500×450',price:7600},{spec:'1500×600',price:11190}
+    ]},
   ]},
   {cat:'중량랙',items:[
     {name:'기둥',specs:[{spec:'1500',price:5840},{spec:'1800',price:7080},{spec:'2100',price:8280},{spec:'2400',price:9370},{spec:'2700',price:11570}]},
