@@ -344,8 +344,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
     </div>
 
     <!-- 품목 선택 탭 -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;">
-      <div style="display:flex;border-bottom:1px solid var(--border);">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:16px;">
+      <div style="display:flex;border-bottom:1px solid var(--border);border-radius:8px 8px 0 0;overflow:hidden;">
         <button class="ntab-btn active" id="ntab-zinc" onclick="setNTab('zinc')">아연도금랙</button>
         <button class="ntab-btn" id="ntab-mesh" onclick="setNTab('mesh')">메쉬망</button>
         <button class="ntab-btn" id="ntab-heavy" onclick="setNTab('heavy')">중량랙</button>
@@ -843,6 +843,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
             <button class="sbtn on" id="piFmSingle" onclick="setPiForm('single')" style="font-size:11px;padding:5px 2px;">독립형</button>
             <button class="sbtn" id="piFmConnect" onclick="setPiForm('connect')" style="font-size:11px;padding:5px 2px;">연결형</button>
           </div>
+          <select id="piColor" style="font-size:11px;padding:5px 4px;border:1px solid var(--border-dark);border-radius:3px;background:var(--surface);color:var(--tx);">
+            <option value="normal">일반</option>
+            <option value="black">블랙</option>
+          </select>
           <button onclick="calcAndAdd()" style="padding:5px 10px;background:var(--accent);color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer;white-space:nowrap;">추가</button>
         </div>
         <div class="parts-list" id="partsList">
@@ -1057,6 +1061,7 @@ function showPage(p){
   if(p==='new'){
     const inp=document.getElementById('nDate');
     if(inp)inp.placeholder=today4();
+    setNTab('zinc');
   }
 }
 function goHome(){showPage('home');}
@@ -1185,9 +1190,54 @@ function calcAndAdd(){
   const type=document.getElementById('piType').value;
   const spec=document.getElementById('piSpec').value.trim();
   const qty=parseInt(document.getElementById('piQty').value)||1;
+  const color=document.getElementById('piColor')?.value||'normal';
   if(!spec){alert('규격을 입력하세요.');return;}
-  const newParts=calcParts(type,spec,qty,piForm);
-  mergeOrPush(newParts);
+
+  if(type==='mesh'){
+    const newParts=calcParts(type,spec,qty,piForm);
+    mergeOrPush(newParts);
+  } else {
+    const{w,d,h,lev}=parseSpec(spec);
+    if(!w||!h){alert('규격을 정확히 입력하세요.\n예) 1200×450×1800×5단');return;}
+    const cnt=qty;
+    const isBlack=color==='black';
+    const priceRate=isBlack?(type==='heavy'?1.08:1.06):1;
+    const colorSuffix=isBlack?'/블랙':'';
+    const pfx=type==='zinc'?'아연도금랙':type==='heavy'?'중량랙':'경량랙';
+    const cat=pfx;
+    const pillar=piForm==='single'?4:2;
+    const newParts=[];
+    const add=(name,sp,q)=>{
+      const basePrice=lookupPrice(name,sp,cat);
+      if(name.includes('안전핀')){newParts.push({id:genId(),name:`${pfx}/부속/안전핀(경중량랙공용)`,spec:'4파이',qty:q,price:70,editable:true});return;}
+      if(name.includes('안전좌')){newParts.push({id:genId(),name:name+colorSuffix,spec:sp,qty:q,price:120,editable:true});return;}
+      const price=isBlack?Math.round(Math.round(basePrice*priceRate)/10)*10:basePrice;
+      newParts.push({id:genId(),name:name+colorSuffix,spec:sp,qty:q,price,editable:true});
+    };
+    add(`${pfx}/규격/기둥`,String(h),pillar*cnt);
+    add(`${pfx}/규격/전면빔`,String(w),4*cnt);
+    if(type==='zinc'){
+      add(`${pfx}/규격/공용받침`,String(d),lev*2*cnt);
+    } else {
+      add(`${pfx}/규격/상부받침`,String(d),2*cnt);
+      if(lev>1) add(`${pfx}/규격/선반받침`,String(d),(lev-1)*2*cnt);
+    }
+    add(`${pfx}/부속/안전좌`,'50*50',4*cnt);
+    add(`${pfx}/부속/안전핀`,'4파이',8*cnt);
+    add(`${pfx}/규격/선반`,`${w}*${d}`,lev*cnt);
+    mergeOrPush(newParts);
+  }
+
+  // 순서 정렬
+  const PART_ORDER=['기둥','전면빔','상부받침','선반받침','공용받침','안전좌','안전핀','망치','선반','클립'];
+  parts.sort((a,b)=>{
+    const ai=PART_ORDER.findIndex(o=>a.name.includes(o));
+    const bi=PART_ORDER.findIndex(o=>b.name.includes(o));
+    const av=ai===-1?PART_ORDER.length:ai;
+    const bv=bi===-1?PART_ORDER.length:bi;
+    if(av!==bv)return av-bv;
+    return String(a.spec).localeCompare(String(b.spec),undefined,{numeric:true});
+  });
   renderParts();
 }
 
@@ -1532,7 +1582,7 @@ function setNTab(t){
   nUpdPrev();
 }
 
-function nZFormChange(){}
+function nZFormChange(){} // 아연도금랙 독립/연결 변경 (현재 세팅비 없음)
 function toggleSetup(type, isBlack){
   const cb=document.getElementById('n'+type+'Setup');
   const sp=document.getElementById('n'+type+'SetupSpan');
