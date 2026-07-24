@@ -957,7 +957,7 @@ function checkPw(){
   if(document.getElementById('lockInput').value===PW){
     sessionStorage.setItem('dclracks_auth','1');
     document.getElementById('lockScreen').style.display='none';
-    loadAll();
+    loadAll().catch(()=>showPage('home'));
   }else{
     const inp=document.getElementById('lockInput');
     inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');
@@ -978,8 +978,12 @@ function doLock(){
     setTimeout(()=>document.getElementById('lockInput').focus(),80);
   }else{document.getElementById('lockPwErr').textContent='비밀번호가 틀렸습니다.';}
 }
-if(sessionStorage.getItem('dclracks_auth')==='1'){document.getElementById('lockScreen').style.display='none';loadAll();}
-else{document.getElementById('lockInput').focus();}
+if(sessionStorage.getItem('dclracks_auth')==='1'){
+  document.getElementById('lockScreen').style.display='none';
+  loadAll().catch(()=>showPage('home'));
+} else {
+  document.getElementById('lockInput').focus();
+}
 
 // ════════════════════════════════════════
 // SYNC STATUS
@@ -1005,7 +1009,14 @@ async function loadAll(){
     calEvents=cal;calHash=calEvHash(cal);
   }catch(e){console.error(e);setSS('error');}
   setSS('');
-  showPage('home');
+  // 강제로 homePage 표시
+  ['home','new','kanban','archive','price'].forEach(k=>{
+    const el=document.getElementById(k+'Page');
+    if(el) el.style.display=k==='home'?'block':'none';
+  });
+  document.getElementById('si-home')?.classList.add('active');
+  curPage='home';
+  renderHomeCal();
 }
 async function saveCardDb(card){
   setSS('saving');
@@ -1036,7 +1047,7 @@ function showPage(p){
   curPage=p;
   ['home','new','kanban','archive','price'].forEach(k=>{
     const el=document.getElementById(k+'Page');
-    if(el)el.style.display=k===p?'block':'none';
+    if(el) el.style.display=k===p?'block':'none';
     const si=document.getElementById('si-'+k);
     if(si)si.classList.toggle('active',k===p);
   });
