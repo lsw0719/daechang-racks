@@ -651,12 +651,31 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 
 <!-- 단가 추가 모달 -->
 <div class="overlay" id="priceAddOverlay" onclick="if(event.target===this)closePriceAddModal()">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:520px;">
     <div class="modal-hd">
       <span class="modal-title" id="priceAddTitle">단가 추가</span>
       <button class="modal-close" onclick="closePriceAddModal()">×</button>
     </div>
     <div class="modal-body">
+
+      <!-- 이미지 업로드 -->
+      <div class="fgroup">
+        <div class="flabel">견적서 이미지 업로드 <span style="font-weight:400;color:var(--tx3);">(AI가 자동 파싱)</span></div>
+        <div id="paImgArea" onclick="document.getElementById('paImgFile').click()" style="border:1.5px dashed var(--border-dark);border-radius:5px;padding:16px;text-align:center;cursor:pointer;background:var(--bg);">
+          <div style="font-size:20px;margin-bottom:4px;">📷</div>
+          <div style="font-size:12px;color:var(--tx2);">클릭해서 이미지 선택 · Ctrl+V 붙여넣기</div>
+        </div>
+        <input type="file" id="paImgFile" accept="image/*" style="display:none" onchange="onPaImgSelect(event)">
+        <div id="paImgPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:11px;color:var(--tx3);">또는 직접 입력</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <!-- 직접 입력 -->
       <div class="fgroup">
         <div class="flabel">품목</div>
         <select id="paItem" onchange="updatePaSubItems()" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);"></select>
@@ -665,21 +684,30 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
         <div class="flabel">구분</div>
         <div style="display:flex;gap:6px;">
           <select id="paSubCat" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;flex:1;background:var(--surface);color:var(--tx);"></select>
-          <input type="text" id="paSubCatNew" placeholder="직접입력" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;flex:1;background:var(--surface);color:var(--tx);">
+          <input type="text" id="paSubCatNew" placeholder="새 구분 직접입력" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;flex:1;background:var(--surface);color:var(--tx);">
         </div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:3px;">드롭다운 선택 또는 새 구분 직접 입력</div>
       </div>
-      <div class="fgroup">
-        <div class="flabel">규격</div>
-        <input type="text" id="paSpec" placeholder="예) 1800, 900×600" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="fgroup">
+          <div class="flabel">규격</div>
+          <input type="text" id="paSpec" placeholder="예) 1800, 900×600" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+        </div>
+        <div class="fgroup">
+          <div class="flabel">단가 (원)</div>
+          <input type="number" id="paPrice" placeholder="0" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+        </div>
       </div>
-      <div class="fgroup">
-        <div class="flabel">단가 (원)</div>
-        <input type="number" id="paPrice" placeholder="0" style="font-size:13px;padding:7px 9px;border:1px solid var(--border-dark);border-radius:4px;width:100%;background:var(--surface);color:var(--tx);">
+
+      <!-- AI 파싱 결과 미리보기 -->
+      <div id="paParsedWrap" style="display:none;">
+        <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:6px;">AI 파싱 결과 <span style="font-weight:400;color:var(--tx3);">(체크한 항목만 저장)</span></div>
+        <div id="paParsedList" style="max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;"></div>
       </div>
+
     </div>
     <div class="modal-foot">
       <button class="btn-sec" onclick="closePriceAddModal()">취소</button>
+      <button id="paParseSaveBtn" class="btn-primary" onclick="saveParsedItems()" style="display:none;">✅ 선택 항목 저장</button>
       <button class="btn-primary" onclick="savePriceItem()">저장</button>
     </div>
   </div>
@@ -2035,23 +2063,135 @@ function renderPriceTable(){
       <thead><tr>
         <th style="width:40px;">NO.</th>
         <th>구분</th><th>규격</th>
+        <th style="text-align:center;width:70px;">유형</th>
         <th style="text-align:right;">단가 (원)</th>
         <th style="width:60px;"></th>
       </tr></thead>
-      <tbody>${items.map((item,i)=>`<tr>
+      <tbody>${items.map((item,i)=>{
+        const isStd = isStandardSpec(item.cat, item.subCat, item.spec);
+        return `<tr>
         <td style="color:var(--tx3);font-size:11px;">${i+1}</td>
         <td>${hl(item.subCat)}</td>
         <td>${hl(item.spec)}</td>
+        <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isStd?'#DBEAFE':'#FEF3C7'};color:${isStd?'#1e40af':'#92400E'};font-weight:500;">${isStd?'규격':'비규격'}</span></td>
         <td style="text-align:right;font-family:var(--mono);">${item.price.toLocaleString()}</td>
         <td style="text-align:center;">${!item.builtin?`<button onclick="editPriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">✏️</button><button onclick="deletePriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">×</button>`:''}
         </td>
-      </tr>`).join('')}</tbody>
+      </tr>`;}).join('')}</tbody>
     </table>
   </div>`;
 }
 
-// 단가 추가 모달
+// 규격 여부 판단 (기본 PRICE_DATA에 있으면 규격)
+function isStandardSpec(cat, subCat, spec){
+  const catData = PRICE_DATA.find(c=>c.cat===cat);
+  if(!catData) return false;
+  const itemData = catData.items.find(i=>i.name===subCat);
+  if(!itemData) return false;
+  return itemData.specs.some(s=>s.spec===spec);
+}
+
+// 이미지 선택 → AI 파싱
+let paImgBase64 = null;
+let parsedItems = [];
+
+async function onPaImgSelect(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    paImgBase64 = ev.target.result.split(',')[1];
+    document.getElementById('paImgPreview').innerHTML=`<img src="${ev.target.result}" style="max-width:100%;max-height:160px;border-radius:4px;border:1px solid var(--border);">`;
+    await parseImageWithAI();
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+
+async function parseImageWithAI(){
+  const paImgArea = document.getElementById('paImgArea');
+  paImgArea.innerHTML='<div style="font-size:12px;color:var(--tx3);">⏳ AI 분석 중...</div>';
+
+  const cat = document.getElementById('paItem').value;
+
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image',source:{type:'base64',media_type:'image/jpeg',data:paImgBase64}},
+            {type:'text',text:`이 견적서 이미지에서 품목 테이블을 파싱해줘.
+품목(cat)은 "${cat}"으로 고정.
+구분(subCat), 규격(spec), 단가(price) 를 JSON 배열로만 반환해줘.
+예시: [{"subCat":"기둥","spec":"1800","price":5840},{"subCat":"선반","spec":"1500*450","price":8720}]
+규격은 이미지에 있는 그대로 넣어줘. JSON만 반환하고 다른 텍스트는 없애줘.`}
+          ]
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text||'';
+    const clean = text.replace(/```json|```/g,'').trim();
+    parsedItems = JSON.parse(clean).map(i=>({...i, cat, id:genId(), builtin:false}));
+    renderParsedItems();
+  }catch(err){
+    paImgArea.innerHTML='<div style="font-size:12px;color:var(--danger);">파싱 실패. 직접 입력해주세요.</div>';
+    console.error(err);
+  }
+  paImgArea.innerHTML='<div style="font-size:11px;color:var(--green);">✓ 분석 완료. 아래에서 확인하세요.</div>';
+}
+
+function renderParsedItems(){
+  if(!parsedItems.length) return;
+  document.getElementById('paParsedWrap').style.display='block';
+  document.getElementById('paParseSaveBtn').style.display='inline-block';
+  const list = document.getElementById('paParsedList');
+  list.innerHTML = parsedItems.map((item,i)=>{
+    const isStd = isStandardSpec(item.cat, item.subCat, item.spec);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:0.5px solid var(--border);font-size:12px;">
+      <input type="checkbox" id="pa_chk_${i}" checked style="width:auto;flex-shrink:0;">
+      <span style="flex:1;">${escH(item.subCat)}</span>
+      <span style="flex:1;color:var(--tx2);">${escH(item.spec)}</span>
+      <span style="font-size:10px;padding:1px 5px;border-radius:8px;background:${isStd?'#DBEAFE':'#FEF3C7'};color:${isStd?'#1e40af':'#92400E'};">${isStd?'규격':'비규격'}</span>
+      <span style="font-family:var(--mono);min-width:70px;text-align:right;">${(item.price||0).toLocaleString()}원</span>
+    </div>`;
+  }).join('');
+}
+
+async function saveParsedItems(){
+  const toSave = parsedItems.filter((_,i)=>document.getElementById(`pa_chk_${i}`)?.checked);
+  if(!toSave.length){alert('저장할 항목을 선택하세요.');return;}
+  for(const item of toSave){
+    customPrices.push(item);
+    await saveCustomPrice(item);
+  }
+  closePriceAddModal();
+  renderPrice();
+}
+
+// 단가 모달 열릴 때 paste 리스너 등록
 function openPriceAddModal(editId=null){
+  // paste 이벤트 등록
+  document._pasteHandler = async (e) => {
+    if(!document.getElementById('priceAddOverlay').classList.contains('open')) return;
+    const items = [...(e.clipboardData?.items||[])].filter(i=>i.type.startsWith('image/'));
+    if(!items.length) return;
+    e.preventDefault();
+    const file = items[0].getAsFile();
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      paImgBase64 = ev.target.result.split(',')[1];
+      document.getElementById('paImgPreview').innerHTML=`<img src="${ev.target.result}" style="max-width:100%;max-height:160px;border-radius:4px;border:1px solid var(--border);">`;
+      await parseImageWithAI();
+    };
+    reader.readAsDataURL(file);
+  };
+  document.addEventListener('paste', document._pasteHandler);
+
   priceEditId=editId;
   const cats=getPriceCats();
   const paItem=document.getElementById('paItem');
@@ -2076,7 +2216,19 @@ function openPriceAddModal(editId=null){
   }
   document.getElementById('priceAddOverlay').classList.add('open');
 }
-function closePriceAddModal(){ document.getElementById('priceAddOverlay').classList.remove('open'); }
+function closePriceAddModal(){
+  document.getElementById('priceAddOverlay').classList.remove('open');
+  if(document._pasteHandler){
+    document.removeEventListener('paste', document._pasteHandler);
+    document._pasteHandler = null;
+  }
+  paImgBase64=null;
+  parsedItems=[];
+  document.getElementById('paParsedWrap').style.display='none';
+  document.getElementById('paParseSaveBtn').style.display='none';
+  document.getElementById('paImgPreview').innerHTML='';
+  document.getElementById('paImgArea').innerHTML='<div style="font-size:20px;margin-bottom:4px;">📷</div><div style="font-size:12px;color:var(--tx2);">클릭해서 이미지 선택 · Ctrl+V 붙여넣기</div>';
+}
 
 function updatePaSubItems(){
   const cat=document.getElementById('paItem').value;
