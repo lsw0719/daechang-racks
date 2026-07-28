@@ -330,16 +330,24 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
           <input type="text" id="nDestDetail" placeholder="상세 주소">
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="fgroup">
           <div class="flabel">출고일자</div>
           <input type="text" id="nShipDate" class="dinput" maxlength="4" placeholder="미정" oninput="onDI(this)" autocomplete="off">
           <div style="font-size:10px;color:var(--tx3);margin-top:2px;">월일 4자리 또는 공란(미정)</div>
         </div>
+        <div class="fgroup">
+          <div class="flabel">업체명 <span style="font-weight:400;color:var(--tx3);">(이미지 미포함)</span></div>
+          <input type="text" id="nCompany" placeholder="업체명 입력">
+        </div>
       </div>
       <div class="fgroup">
         <div class="flabel">건 네이밍 (자동생성)</div>
         <div class="npreview" id="nNamePreview">—</div>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">업체명 <span style="font-weight:400;color:var(--tx3);">(이미지 미포함)</span></div>
+        <input type="text" id="nCompany" placeholder="업체명 입력">
       </div>
     </div>
 
@@ -1231,7 +1239,7 @@ function calcAndAdd(){
       add(`${pfx}/규격/상부받침`,String(d),2*cnt);
       if(lev>1) add(`${pfx}/규격/선반받침`,String(d),(lev-1)*2*cnt);
     }
-    add(`${pfx}/부속/안전좌`,'50*50',4*cnt);
+    add(`${pfx}/부속/안전좌`,'50*50',pillar*cnt);
     add(`${pfx}/부속/안전핀`,'4파이',8*cnt);
     add(`${pfx}/규격/선반`,`${w}*${d}`,lev*cnt);
     mergeOrPush(newParts);
@@ -1702,19 +1710,22 @@ function nCalcAndAdd(type){
       const base=findMeshBasePrice(h,w);
       if(!base){alert('기준 규격을 찾을 수 없습니다.');return;}
 
-      // 기준 철망
-      newParts.push({id:genId(),name:'철망/규격',spec:`${base.baseH}×${base.baseW}`,qty:cnt,price:base.price,editable:true});
+      // 기준 철망 - 규격에 실제 사이즈 표기
+      newParts.push({id:genId(),name:'철망/규격',spec:`${h}×${w} (기준:${base.baseH}×${base.baseW})`,qty:cnt,price:base.price,editable:true});
 
-      // 절단비 (30장 기준)
+      // 절단비 - 장당 단가×수량을 합산해서 1줄로
       const under30=cnt<30;
+      const cutParts=[];
       if(cutV){
-        const cutFee=under30?5000:4000;
-        newParts.push({id:genId(),name:'철망/절단비/세로',spec:`${h}mm (${under30?'30장미만':'30장이상'})`,qty:cnt,price:cutFee,editable:true});
+        const feePerSheet=under30?5000:4000;
+        cutParts.push(`세로${feePerSheet.toLocaleString()}원`);
       }
       if(cutH){
-        const cutFee=under30?3000:2000;
-        newParts.push({id:genId(),name:'철망/절단비/가로',spec:`${w}mm (${under30?'30장미만':'30장이상'})`,qty:cnt,price:cutFee,editable:true});
+        const feePerSheet=under30?3000:2000;
+        cutParts.push(`가로${feePerSheet.toLocaleString()}원`);
       }
+      const totalCutFee=(cutV?(under30?5000:4000):0)+(cutH?(under30?3000:2000):0);
+      newParts.push({id:genId(),name:'철망/절단비',spec:`${h}×${w} (${cutParts.join('+')}×${cnt}장)`,qty:1,price:totalCutFee*cnt,editable:true});
     }
   } else {
     const ids={zinc:['nZW','nZD','nZH','nZLev','nZCnt','nZForm'],
@@ -1769,7 +1780,7 @@ function nCalcAndAdd(type){
       if(lev>1) add(`${pfx}/규격/선반받침`,String(d),(lev-1)*2*cnt);
     }
 
-    add(`${pfx}/부속/안전좌`,'50*50',4*cnt);
+    add(`${pfx}/부속/안전좌`,'50*50',pillar*cnt);
     add(`${pfx}/부속/안전핀`,'4파이',8*cnt);
     add(`${pfx}/규격/선반`,`${w}*${d}`,lev*cnt);
 
@@ -1992,15 +2003,27 @@ async function nSaveCard(){
   if(!isVD(date)){alert('날짜를 4자리로 입력하세요.');return;}
   const person=document.getElementById('nPerson').value;
   if(!person){alert('담당자를 선택하세요.');return;}
-  const itemName=nTab==='zinc'?'아연도금랙':nTab==='mesh'?'메쉬망':nTab==='heavy'?'중량랙':'경량랙';
+  const itemName=nGetItemsFromParts()||( nTab==='zinc'?'아연도금랙':nTab==='mesh'?'메쉬망':nTab==='heavy'?'중량랙':'경량랙');
   const dest=document.getElementById('nDest').value;
   const destDetail=dest==='직송'?document.getElementById('nDestDetail').value.trim():'';
-  const shipDateVal = document.getElementById('nShipDate').value;
+  const shipDateVal=document.getElementById('nShipDate').value;
+  const company=document.getElementById('nCompany').value.trim();
+
+  // 중복 네이밍 넘버링
+  const baseName=`${fmtD(date)}_${itemName}_${person}`;
+  let finalName=baseName;
+  let num=2;
+  while(cards.some(c=>c.name===finalName)){
+    finalName=`${baseName}_${num}`;
+    num++;
+  }
+
   const card={
     id:genId(),
-    name:`${fmtD(date)}_${itemName}_${person}`,
+    name:finalName,
     date,person,item:itemName,dest,destDetail,
-    shipDate: shipDateVal ? shipDateVal : '미정',
+    company,
+    shipDate:shipDateVal?shipDateVal:'미정',
     note:document.getElementById('nNote').value.trim(),
     images:[],
     parts:[...nParts],
@@ -2008,9 +2031,10 @@ async function nSaveCard(){
     createdAt:Date.now()
   };
   cards.unshift(card);
-  nParts=[];nRenderParts();
+  nParts=[];nInputItems=[];nRenderParts();nRenderInputList();
   document.getElementById('nNote').value='';
   document.getElementById('nShipDate').value='';
+  document.getElementById('nCompany').value='';
   alert('저장됐습니다!');
   showPage('kanban');
   await saveCardDb(card);
@@ -2220,22 +2244,46 @@ function renderPriceTable(){
     <table class="price-table" style="width:100%;">
       <thead><tr>
         <th style="width:40px;">NO.</th>
-        <th>구분</th><th>규격</th>
+        <th>구분</th>
+        <th>색상</th>
+        <th>규격</th>
         <th style="text-align:center;width:70px;">유형</th>
         <th style="text-align:right;">단가 (원)</th>
         <th style="width:60px;"></th>
       </tr></thead>
-      <tbody>${items.map((item,i)=>{
+      <tbody>${items.flatMap((item,i)=>{
         const isStd = isStandardSpec(item.cat, item.subCat, item.spec);
-        return `<tr>
-        <td style="color:var(--tx3);font-size:11px;">${i+1}</td>
-        <td>${hl(item.subCat)}</td>
-        <td>${hl(item.spec)}</td>
-        <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isStd?'#DBEAFE':'#FEF3C7'};color:${isStd?'#1e40af':'#92400E'};font-weight:500;">${isStd?'규격':'비규격'}</span></td>
-        <td style="text-align:right;font-family:var(--mono);">${item.price.toLocaleString()}</td>
-        <td style="text-align:center;">${!item.builtin?`<button onclick="editPriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">✏️</button><button onclick="deletePriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">×</button>`:''}
-        </td>
-      </tr>`;}).join('')}</tbody>
+        const hasBlack = (item.cat==='경량랙'||item.cat==='중량랙') && item.builtin;
+        const isSilver = item.cat==='아연도금랙' && item.builtin;
+        const blackRate = item.cat==='경량랙'?1.06:item.cat==='중량랙'?1.08:0;
+        const blackPrice = hasBlack ? Math.round(Math.round(item.price*blackRate)/10)*10 : null;
+        const colorBadge = isSilver
+          ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#E8E8E8;border:1px solid #B8B8B8;color:#555;">실버</span>`
+          : `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#F5F5EE;border:1px solid #D8D4CB;color:#5a5248;">아이보리</span>`;
+        const rows = [];
+        // 아이보리/실버 행
+        rows.push(`<tr>
+          <td style="color:var(--tx3);font-size:11px;" rowspan="${hasBlack?2:1}">${i+1}</td>
+          <td rowspan="${hasBlack?2:1}">${hl(item.subCat)}</td>
+          <td>${colorBadge}</td>
+          <td>${hl(item.spec)}</td>
+          <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isStd?'#DBEAFE':'#FEF3C7'};color:${isStd?'#1e40af':'#92400E'};font-weight:500;">${isStd?'규격':'비규격'}</span></td>
+          <td style="text-align:right;font-family:var(--mono);">${item.price.toLocaleString()}</td>
+          <td style="text-align:center;">${!item.builtin?`<button onclick="editPriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">✏️</button><button onclick="deletePriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">×</button>`:''}
+          </td>
+        </tr>`);
+        // 블랙 행
+        if(hasBlack && blackPrice){
+          rows.push(`<tr style="background:#F8F8F8;">
+            <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#1a1a1a;color:#fff;">블랙</span></td>
+            <td>${hl(item.spec)}</td>
+            <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isStd?'#DBEAFE':'#FEF3C7'};color:${isStd?'#1e40af':'#92400E'};font-weight:500;">${isStd?'규격':'비규격'}</span></td>
+            <td style="text-align:right;font-family:var(--mono);">${blackPrice.toLocaleString()}</td>
+            <td></td>
+          </tr>`);
+        }
+        return rows;
+      }).join('')}</tbody>
     </table>
   </div>`;
 }
@@ -2269,24 +2317,35 @@ async function parseImageWithAI(){
   const paImgArea = document.getElementById('paImgArea');
   paImgArea.innerHTML='<div style="font-size:12px;color:var(--tx3);">⏳ AI 분석 중...</div>';
 
-  const cat = document.getElementById('paItem').value;
-
   try{
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         model:'claude-sonnet-4-6',
-        max_tokens:1000,
+        max_tokens:2000,
         messages:[{
           role:'user',
           content:[
             {type:'image',source:{type:'base64',media_type:'image/jpeg',data:paImgBase64}},
             {type:'text',text:`이 견적서 이미지에서 품목 테이블을 파싱해줘.
-품목(cat)은 "${cat}"으로 고정.
-구분(subCat), 규격(spec), 단가(price) 를 JSON 배열로만 반환해줘.
-예시: [{"subCat":"기둥","spec":"1800","price":5840},{"subCat":"선반","spec":"1500*450","price":8720}]
-규격은 이미지에 있는 그대로 넣어줘. JSON만 반환하고 다른 텍스트는 없애줘.`}
+
+각 행마다 cat(품목), subCat(구분), spec(규격), price(단가)를 추출해줘.
+
+cat 판단 기준:
+- "경량랙", "경량" → "경량랙"
+- "중량랙", "중량" → "중량랙"  
+- "아연도금", "아연" → "아연도금랙"
+- "메쉬", "철망", "메쉬망" → "철망"
+- 그 외 → 품명 그대로
+
+subCat: 규격 앞의 부품명 (예: "기둥", "전면빔", "선반", "상부받침" 등)
+spec: 숫자 규격만 (예: "1800", "900*450", "1500")
+<블랙> 같은 색상 표기는 spec에서 제거하고 subCat에 포함시켜줘 (예: subCat: "기둥 블랙")
+price: 단가 숫자만 (콤마 제거)
+
+JSON 배열만 반환, 다른 텍스트 없이:
+[{"cat":"경량랙","subCat":"기둥 블랙","spec":"1800","price":5720}]`}
           ]
         }]
       })
@@ -2294,7 +2353,7 @@ async function parseImageWithAI(){
     const data = await res.json();
     const text = data.content?.[0]?.text||'';
     const clean = text.replace(/```json|```/g,'').trim();
-    parsedItems = JSON.parse(clean).map(i=>({...i, cat, id:genId(), builtin:false}));
+    parsedItems = JSON.parse(clean).map(i=>({...i, id:genId(), builtin:false}));
     renderParsedItems();
   }catch(err){
     paImgArea.innerHTML='<div style="font-size:12px;color:var(--danger);">파싱 실패. 직접 입력해주세요.</div>';
