@@ -271,7 +271,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
         <input type="text" id="signupName" placeholder="이름" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;">
         <input type="email" id="signupEmail" placeholder="이메일" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;">
-        <input type="password" id="signupPw" placeholder="비밀번호 (6자 이상)" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;" onkeydown="if(event.key==='Enter')doSignup()">
+        <input type="password" id="signupPw" placeholder="비밀번호 (6자 이상)" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;">
+        <input type="text" id="signupCode" placeholder="초대 코드" style="font-family:var(--mono);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;letter-spacing:.08em;" onkeydown="if(event.key==='Enter')doSignup()">
       </div>
       <button onclick="doSignup()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px;">가입 신청</button>
       <button onclick="showAuthTab('login')" style="width:100%;padding:8px;background:none;border:1px solid var(--border-dark);border-radius:6px;font-family:var(--sans);font-size:13px;color:var(--tx2);cursor:pointer;">로그인으로 돌아가기</button>
@@ -776,6 +777,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 <div id="adminPage" style="display:none;">
   <div style="max-width:700px;margin:0 auto;padding:24px;">
     <div style="font-size:16px;font-weight:600;margin-bottom:16px;">👥 회원 관리</div>
+
+    <!-- 초대코드 생성 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">초대 코드 생성</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="inviteRole" style="font-size:13px;padding:7px 10px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);color:var(--tx);">
+          <option value="speedrack">스피드랙</option>
+          <option value="daechang">대창랙스</option>
+          <option value="master">마스터</option>
+        </select>
+        <button onclick="createInviteCode()" class="btn-primary" style="padding:7px 16px;">코드 생성</button>
+      </div>
+      <div id="inviteCodeResult" style="margin-top:10px;"></div>
+      <!-- 코드 목록 -->
+      <div id="inviteCodeList" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- 회원 목록 -->
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;">가입 회원</div>
     <div id="adminUserList"></div>
   </div>
 </div>
@@ -1083,30 +1103,54 @@ async function doSignup(){
   const name = document.getElementById('signupName').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
   const pw = document.getElementById('signupPw').value;
-  if(!name||!email||!pw){document.getElementById('signupErr').textContent='모든 항목을 입력하세요.';return;}
+  const code = document.getElementById('signupCode').value.trim().toUpperCase();
+  if(!name||!email||!pw||!code){document.getElementById('signupErr').textContent='모든 항목을 입력하세요.';return;}
   if(pw.length<6){document.getElementById('signupErr').textContent='비밀번호는 6자 이상이어야 합니다.';return;}
-  document.getElementById('signupErr').textContent='처리 중...';
+  document.getElementById('signupErr').textContent='초대 코드 확인 중...';
+
+  // 초대 코드 검증
+  const codeRes = await fetch(`${SUPA_URL}/rest/v1/invite_codes?code=eq.${encodeURIComponent(code)}&select=code,role,used_by,expires_at`,{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  });
+  const codeData = await codeRes.json();
+  if(!codeData.length){document.getElementById('signupErr').textContent='유효하지 않은 초대 코드입니다.';return;}
+  const inv = codeData[0];
+  if(inv.used_by){document.getElementById('signupErr').textContent='이미 사용된 초대 코드입니다.';return;}
+  if(inv.expires_at && new Date(inv.expires_at) < new Date()){document.getElementById('signupErr').textContent='만료된 초대 코드입니다.';return;}
+
+  document.getElementById('signupErr').textContent='계정 생성 중...';
   const data = await authFetch('/signup', {email, password:pw, data:{name}});
   if(data.error){document.getElementById('signupErr').textContent=data.error_description||'가입 실패';return;}
-  // user_roles에 pending으로 삽입 (anon key로 직접)
-  try{
-    await fetch(`${SUPA_URL}/rest/v1/user_roles`, {
-      method:'POST',
-      headers:{
-        'apikey':SUPA_KEY,
-        'Authorization':'Bearer '+SUPA_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates'
-      },
-      body:JSON.stringify({id:data.user.id, role:'pending', name})
-    });
-  }catch(e){console.error('role insert failed',e);}
+
+  const uid = data.user?.id;
+  if(!uid){document.getElementById('signupErr').textContent='가입 실패. 다시 시도해주세요.';return;}
+
+  // user_roles에 코드 role로 등록
+  await fetch(`${SUPA_URL}/rest/v1/user_roles`,{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+    body:JSON.stringify({id:uid, role:inv.role||'pending', name})
+  });
+
+  // 초대 코드 사용 처리
+  await fetch(`${SUPA_URL}/rest/v1/invite_codes?code=eq.${encodeURIComponent(code)}`,{
+    method:'PATCH',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({used_by:uid, used_at:new Date().toISOString()})
+  });
+
   document.getElementById('signupErr').textContent='';
-  showAuthTab('pending');
-  if(data.access_token){
-    localStorage.setItem('dclracks_token', data.access_token);
-    localStorage.setItem('dclracks_uid', data.user.id);
+  if(data.session?.access_token){
+    localStorage.setItem('dclracks_token', data.session.access_token);
+    localStorage.setItem('dclracks_uid', uid);
+    const role = await getUserRole(uid, data.session.access_token);
+    if(role&&role.role!=='pending'){
+      currentUser={id:uid,email:data.user.email,role:role.role,name:role.name||data.user.email};
+      onAuthSuccess();
+      return;
+    }
   }
+  showAuthTab('pending');
 }
 
 async function doLogout(){
@@ -1175,7 +1219,54 @@ async function tryAutoLogin(){
 // ════════════════════════════════════════
 // ADMIN PAGE
 // ════════════════════════════════════════
+function genCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:8},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+async function createInviteCode(){
+  const role = document.getElementById('inviteRole').value;
+  const code = genCode();
+  const expires = new Date(Date.now()+7*24*60*60*1000).toISOString(); // 7일
+  await fetch(`${SUPA_URL}/rest/v1/invite_codes`,{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({code, role, created_by:currentUser.id, expires_at:expires})
+  });
+  const ROLE_LABELS={speedrack:'스피드랙',daechang:'대창랙스',master:'마스터'};
+  document.getElementById('inviteCodeResult').innerHTML=`
+    <div style="background:var(--accent-l);border:1px solid var(--accent);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:18px;font-weight:700;font-family:var(--mono);letter-spacing:.1em;color:var(--accent);">${code}</div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:2px;">${ROLE_LABELS[role]} · 7일 유효</div>
+      </div>
+      <button onclick="navigator.clipboard.writeText('${code}');this.textContent='✓ 복사됨'" style="padding:5px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer;font-family:var(--sans);">복사</button>
+    </div>`;
+  loadInviteCodes();
+}
+
+async function loadInviteCodes(){
+  const res = await fetch(`${SUPA_URL}/rest/v1/invite_codes?order=created_at.desc&select=code,role,used_by,expires_at,created_at`,{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  });
+  const codes = await res.json();
+  const ROLE_LABELS={speedrack:'스피드랙',daechang:'대창랙스',master:'마스터',pending:'대기'};
+  const el = document.getElementById('inviteCodeList');
+  if(!codes.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-weight:600;">최근 코드</div>`+
+    codes.slice(0,5).map(c=>{
+      const used=!!c.used_by;
+      const expired=c.expires_at&&new Date(c.expires_at)<new Date();
+      return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;background:var(--bg);margin-bottom:4px;font-size:12px;">
+        <span style="font-family:var(--mono);font-weight:600;color:${used||expired?'var(--tx3)':'var(--tx)'};">${c.code}</span>
+        <span style="color:var(--tx3);">${ROLE_LABELS[c.role]||c.role}</span>
+        <span style="margin-left:auto;font-size:10px;padding:1px 6px;border-radius:8px;background:${used?'#E8F5E9':expired?'#FEE2E2':'#EBF0FF'};color:${used?'#2E7D32':expired?'#C0392B':'#2D5BE3'};">${used?'사용됨':expired?'만료':'유효'}</span>
+      </div>`;
+    }).join('');
+}
+
 async function renderAdminPage(){
+  loadInviteCodes();
   const el = document.getElementById('adminUserList');
   el.innerHTML = '<div style="color:var(--tx3);font-size:13px;">로딩 중...</div>';
   try{
