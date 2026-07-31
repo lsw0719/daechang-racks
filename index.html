@@ -1058,7 +1058,9 @@ async function authFetch(path, body){
     headers:{'apikey':SUPA_KEY,'Content-Type':'application/json'},
     body:JSON.stringify(body)
   });
-  return res.json();
+  const data = await res.json();
+  console.log('authFetch', path, res.status, data);
+  return data;
 }
 
 async function getUserRole(userId, accessToken){
