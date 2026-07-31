@@ -247,14 +247,44 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 <body>
 
 <!-- LOCK -->
-<div id="lockScreen">
-  <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <div class="lock-title">대창랙스 건 관리</div>
-    <div class="lock-sub">비밀번호를 입력하세요</div>
-    <input type="password" class="lock-inp" id="lockInput" maxlength="10" placeholder="••••" onkeydown="if(event.key==='Enter')checkPw()">
-    <button class="lock-btn" onclick="checkPw()">입력</button>
-    <div class="lock-err" id="lockErr"></div>
+<div id="authScreen" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px 32px;width:340px;max-width:94vw;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:28px;margin-bottom:8px;">🏭</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px;">대창랙스 건 관리</div>
+      <div style="font-size:12px;color:var(--tx3);" id="authSubTitle">로그인하세요</div>
+    </div>
+
+    <!-- 로그인 폼 -->
+    <div id="loginForm">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <input type="email" id="loginEmail" placeholder="이메일" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;" onkeydown="if(event.key==='Enter')doLogin()">
+        <input type="password" id="loginPw" placeholder="비밀번호" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button onclick="doLogin()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px;">로그인</button>
+      <button onclick="showAuthTab('signup')" style="width:100%;padding:8px;background:none;border:1px solid var(--border-dark);border-radius:6px;font-family:var(--sans);font-size:13px;color:var(--tx2);cursor:pointer;">회원가입</button>
+      <div style="font-size:11px;color:var(--danger);margin-top:8px;min-height:16px;text-align:center;" id="loginErr"></div>
+    </div>
+
+    <!-- 회원가입 폼 -->
+    <div id="signupForm" style="display:none;">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <input type="text" id="signupName" placeholder="이름" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;">
+        <input type="email" id="signupEmail" placeholder="이메일" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;">
+        <input type="password" id="signupPw" placeholder="비밀번호 (6자 이상)" style="font-family:var(--sans);font-size:14px;border:1px solid var(--border-dark);border-radius:5px;padding:9px 12px;outline:none;width:100%;" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <button onclick="doSignup()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px;">가입 신청</button>
+      <button onclick="showAuthTab('login')" style="width:100%;padding:8px;background:none;border:1px solid var(--border-dark);border-radius:6px;font-family:var(--sans);font-size:13px;color:var(--tx2);cursor:pointer;">로그인으로 돌아가기</button>
+      <div style="font-size:11px;color:var(--danger);margin-top:8px;min-height:16px;text-align:center;" id="signupErr"></div>
+    </div>
+
+    <!-- 승인 대기 화면 -->
+    <div id="pendingForm" style="display:none;text-align:center;">
+      <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px;">승인 대기 중</div>
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:16px;">관리자 승인 후 사용 가능합니다.</div>
+      <button onclick="doLogout()" style="width:100%;padding:8px;background:none;border:1px solid var(--border-dark);border-radius:6px;font-family:var(--sans);font-size:13px;color:var(--tx2);cursor:pointer;">로그아웃</button>
+    </div>
   </div>
 </div>
 
@@ -266,7 +296,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
     <span id="syncStatus"></span>
     <button id="hCalBtn" onclick="toggleCal()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:17px;cursor:pointer;padding:4px 6px;display:none;" title="출고달력">📅</button>
     <button id="hNewBtn" class="btn-primary" onclick="openNewModal()" style="display:none;">+ 새 건 등록</button>
-    <button onclick="openLockModal()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:17px;cursor:pointer;padding:4px 6px;" title="잠금">🔒</button>
+    <span id="hUserName" style="font-size:12px;color:rgba(255,255,255,.6);margin-right:4px;"></span>
+    <button onclick="doLogout()" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;padding:4px 10px;border-radius:4px;font-family:var(--sans);">로그아웃</button>
   </div>
 </header>
 
@@ -289,6 +320,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
   <button class="sidebar-item" id="si-price" onclick="showPage('price')">
     <span class="si-icon">💰</span><span>단가</span>
   </button>
+  <div id="adminMenu" style="display:none;">
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">관리자</div>
+    <button class="sidebar-item" id="si-admin" onclick="showPage('admin')">
+      <span class="si-icon">👥</span><span>회원 관리</span>
+    </button>
+  </div>
 </div>
 
 <!-- MAIN -->
@@ -734,6 +772,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
   </div>
 </div>
 
+<!-- ADMIN -->
+<div id="adminPage" style="display:none;">
+  <div style="max-width:700px;margin:0 auto;padding:24px;">
+    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">👥 회원 관리</div>
+    <div id="adminUserList"></div>
+  </div>
+</div>
+
 </div><!-- /main-content -->
 </div><!-- /app-layout -->
 
@@ -953,7 +999,6 @@ async function calDbDelete(id){await sbFetch(`/rest/v1/cal_events?id=eq.${id}`,{
 // ════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════
-const PW='5586';
 const PERSONS=['이근표','이하림','이수완','김성배'];
 const STATUS_LABELS=['견적요청','발주확정','출고일자 확정'];
 const STATUS_NEXT=['발주확정으로','출고일자 확정으로'];
@@ -982,43 +1027,181 @@ function cardsHash(arr){let s=arr.map(c=>c.id+c.status).join(','),h=0;for(let i=
 function calEvHash(arr){let s=arr.map(e=>e.id+e.date+e.type).join(','),h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return String(h);}
 
 // ════════════════════════════════════════
-// LOCK
+// AUTH STATE
 // ════════════════════════════════════════
-function checkPw(){
-  if(document.getElementById('lockInput').value===PW){
-    sessionStorage.setItem('dclracks_auth','1');
-    document.getElementById('lockScreen').style.display='none';
-    loadAll().catch(()=>showPage('home'));
-  }else{
-    const inp=document.getElementById('lockInput');
-    inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');
-    inp.value='';document.getElementById('lockErr').textContent='비밀번호가 틀렸습니다.';
-  }
-}
-function openLockModal(){
-  document.getElementById('lockPwInput').value='';document.getElementById('lockPwErr').textContent='';
-  document.getElementById('lockOverlay').classList.add('open');
-  setTimeout(()=>document.getElementById('lockPwInput').focus(),80);
-}
-function closeLockModal(){document.getElementById('lockOverlay').classList.remove('open');}
-function doLock(){
-  if(document.getElementById('lockPwInput').value===PW){
-    sessionStorage.removeItem('dclracks_auth');closeLockModal();
-    document.getElementById('lockInput').value='';document.getElementById('lockErr').textContent='';
-    document.getElementById('lockScreen').style.display='flex';
-    setTimeout(()=>document.getElementById('lockInput').focus(),80);
-  }else{document.getElementById('lockPwErr').textContent='비밀번호가 틀렸습니다.';}
-}
-if(sessionStorage.getItem('dclracks_auth')==='1'){
-  document.getElementById('lockScreen').style.display='none';
-  loadAll().catch(()=>showPage('home'));
-} else {
-  document.getElementById('lockInput').focus();
+let currentUser = null; // {id, email, role, name}
+
+// Auth API 헬퍼
+async function authFetch(path, body){
+  const res = await fetch(SUPA_URL+'/auth/v1'+path, {
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  return res.json();
 }
 
+async function getUserRole(userId, accessToken){
+  // 먼저 사용자 토큰으로 시도, 실패 시 anon key로 시도
+  for(const token of [accessToken, SUPA_KEY]){
+    try{
+      const res = await fetch(`${SUPA_URL}/rest/v1/user_roles?id=eq.${userId}&select=role,name`, {
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}
+      });
+      const data = await res.json();
+      if(Array.isArray(data)&&data.length) return data[0];
+    }catch(e){}
+  }
+  return null;
+}
+
+function showAuthTab(tab){
+  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('signupForm').style.display = tab==='signup'?'block':'none';
+  document.getElementById('pendingForm').style.display = tab==='pending'?'block':'none';
+  document.getElementById('authSubTitle').textContent = tab==='login'?'로그인하세요':tab==='signup'?'계정을 만드세요':'승인 대기';
+}
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  if(!email||!pw){document.getElementById('loginErr').textContent='이메일과 비밀번호를 입력하세요.';return;}
+  document.getElementById('loginErr').textContent='로그인 중...';
+  const data = await authFetch('/token?grant_type=password', {email, password:pw});
+  if(data.error){document.getElementById('loginErr').textContent=data.error_description||'로그인 실패';return;}
+  const role = await getUserRole(data.user.id, data.access_token);
+  if(!role||role.role==='pending'){
+    localStorage.setItem('dclracks_token', data.access_token);
+    localStorage.setItem('dclracks_uid', data.user.id);
+    showAuthTab('pending');
+    return;
+  }
+  localStorage.setItem('dclracks_token', data.access_token);
+  localStorage.setItem('dclracks_uid', data.user.id);
+  currentUser = {id:data.user.id, email:data.user.email, role:role.role, name:role.name||data.user.email};
+  onAuthSuccess();
+}
+
+async function doSignup(){
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pw = document.getElementById('signupPw').value;
+  if(!name||!email||!pw){document.getElementById('signupErr').textContent='모든 항목을 입력하세요.';return;}
+  if(pw.length<6){document.getElementById('signupErr').textContent='비밀번호는 6자 이상이어야 합니다.';return;}
+  document.getElementById('signupErr').textContent='처리 중...';
+  const data = await authFetch('/signup', {email, password:pw, data:{name}});
+  if(data.error){document.getElementById('signupErr').textContent=data.error_description||'가입 실패';return;}
+  // user_roles에 pending으로 삽입
+  try{
+    await sbFetch('/rest/v1/user_roles',{method:'POST',body:JSON.stringify({id:data.user.id,role:'pending',name})});
+  }catch(e){}
+  document.getElementById('signupErr').textContent='';
+  showAuthTab('pending');
+  if(data.access_token){
+    localStorage.setItem('dclracks_token', data.access_token);
+    localStorage.setItem('dclracks_uid', data.user.id);
+  }
+}
+
+async function doLogout(){
+  const token = localStorage.getItem('dclracks_token');
+  if(token) await authFetch('/logout', {}).catch(()=>{});
+  localStorage.removeItem('dclracks_token');
+  localStorage.removeItem('dclracks_uid');
+  currentUser = null;
+  document.getElementById('authScreen').style.display='flex';
+  showAuthTab('login');
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPw').value='';
+  document.getElementById('loginErr').textContent='';
+}
+
+function onAuthSuccess(){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('hUserName').textContent = currentUser.name;
+  applyRoleUI();
+  loadAll().catch(()=>showPage('home'));
+}
+
+// 역할별 UI 적용
+function applyRoleUI(){
+  const r = currentUser?.role;
+  // 관리자 메뉴
+  document.getElementById('adminMenu').style.display = r==='master'?'block':'none';
+  // 새 건 등록 사이드바
+  const siNew = document.getElementById('si-new');
+  if(siNew) siNew.style.display = r==='daechang'?'none':'';
+  // 단가 사이드바
+  const siPrice = document.getElementById('si-price');
+  if(siPrice) siPrice.style.display = r==='daechang'?'none':'';
+}
+
+// 자동 로그인 복구
+async function tryAutoLogin(){
+  const token = localStorage.getItem('dclracks_token');
+  const uid = localStorage.getItem('dclracks_uid');
+  if(!token||!uid) return false;
+  try{
+    const role = await getUserRole(uid, token);
+    if(!role||role.role==='pending'){showAuthTab('pending');return true;}
+    // 유저 정보
+    const uRes = await fetch(`${SUPA_URL}/auth/v1/user`,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}});
+    const uData = await uRes.json();
+    if(uData.id){
+      currentUser={id:uData.id,email:uData.email,role:role.role,name:role.name||uData.email};
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+// 초기화
+(async()=>{
+  const ok = await tryAutoLogin();
+  if(ok && currentUser){
+    onAuthSuccess();
+  } else {
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('loginEmail').focus();
+  }
+})();
+
 // ════════════════════════════════════════
-// SYNC STATUS
+// ADMIN PAGE
 // ════════════════════════════════════════
+async function renderAdminPage(){
+  const el = document.getElementById('adminUserList');
+  el.innerHTML = '<div style="color:var(--tx3);font-size:13px;">로딩 중...</div>';
+  try{
+    const token = localStorage.getItem('dclracks_token');
+    const res = await fetch(`${SUPA_URL}/rest/v1/user_roles?select=id,role,name,created_at&order=created_at.asc`,{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}
+    });
+    const users = await res.json();
+    const ROLE_LABELS = {master:'마스터',speedrack:'스피드랙',daechang:'대창랙스',pending:'승인대기'};
+    const ROLE_COLORS = {master:'#2D5BE3',speedrack:'#059669',daechang:'#b45309',pending:'#9E9890'};
+    el.innerHTML = users.map(u=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:500;">${escH(u.name||'이름없음')}</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:2px;">${u.id.slice(0,8)}...</div>
+        </div>
+        <select onchange="updateUserRole('${u.id}',this.value)" style="font-size:13px;padding:5px 8px;border:1px solid var(--border-dark);border-radius:4px;background:var(--surface);color:${ROLE_COLORS[u.role]||'var(--tx)'};font-weight:500;">
+          ${['pending','speedrack','daechang','master'].map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${ROLE_LABELS[r]}</option>`).join('')}
+        </select>
+      </div>`).join('');
+  }catch(e){el.innerHTML='<div style="color:var(--danger);font-size:13px;">로드 실패</div>';}
+}
+
+async function updateUserRole(userId, role){
+  const token = localStorage.getItem('dclracks_token');
+  await fetch(`${SUPA_URL}/rest/v1/user_roles?id=eq.${userId}`,{
+    method:'PATCH',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'},
+    body:JSON.stringify({role})
+  });
+  alert('역할이 변경됐습니다.');
+}
 function setSS(s){
   const el=document.getElementById('syncStatus');if(!el)return;
   if(s==='saving'){el.textContent='저장 중…';el.style.color='#aaa';}
@@ -1075,14 +1258,19 @@ setInterval(async()=>{
 // PAGE NAVIGATION
 // ════════════════════════════════════════
 function showPage(p){
+  const r = currentUser?.role;
+  if(p==='new'&&r==='daechang') return;
+  if(p==='price'&&r==='daechang') return;
+  if(p==='admin'&&r!=='master') return;
+
   curPage=p;
-  ['home','new','kanban','archive','price'].forEach(k=>{
+  ['home','new','kanban','archive','price','admin'].forEach(k=>{
     const el=document.getElementById(k+'Page');
     if(el) el.style.display=k===p?'block':'none';
     const si=document.getElementById('si-'+k);
     if(si)si.classList.toggle('active',k===p);
   });
-  document.getElementById('hNewBtn').style.display='none';
+  document.getElementById('hNewBtn').style.display=(p==='kanban'&&r!=='daechang')?'':'none';
   document.getElementById('hCalBtn').style.display=p==='kanban'?'inline-block':'none';
   renderCurrent();
   if(p==='new'){
@@ -1097,6 +1285,7 @@ function renderCurrent(){
   else if(curPage==='kanban')renderKanban();
   else if(curPage==='archive')renderArchive();
   else if(curPage==='price')renderPrice();
+  else if(curPage==='admin')renderAdminPage();
 }
 
 // ════════════════════════════════════════
@@ -1515,7 +1704,8 @@ function cardHtml(c){
   const priceTag=c.price?`<span class="tag" style="background:var(--accent-l);color:var(--accent);">${c.price.toLocaleString()}원</span>`:'';
   const imgs=c.images||[];
   const th=imgs.length?`<div class="card-meta" style="margin-top:4px;cursor:pointer;color:var(--accent);" onclick="openLBFromCard('${c.id}',0,event)">🖼 이미지 ${imgs.length}장</div>`:'';
-  const nt=c.note?`<div class="card-note">${escH(c.note)}</div>`:'';
+  const r = currentUser?.role;
+  const nt=c.note&&r!=='daechang'?`<div class="card-note">${escH(c.note)}</div>`:'';
   const pts=c.parts&&c.parts.length?`<div class="card-meta" style="margin-top:3px;">🔩 부품 ${c.parts.length}종</div>`:'';
   return`<div class="card" onclick="openEditModal('${c.id}')">
     <div class="card-name">${escH(c.name)}</div>
@@ -2286,13 +2476,29 @@ async function deleteCustomPrice(id){
   await sbFetch(`/rest/v1/price_data?id=eq.${id}`,{method:'DELETE'});
 }
 
-// 전체 단가 (기본 + 추가)
+// 전체 단가 (기본 + 블랙 자동계산 + 추가, override 적용)
 function allPriceItems(){
   const built=[];
+  // override된 id 목록
+  const overrideIds=new Set(customPrices.filter(x=>x.overrideId).map(x=>x.overrideId));
+
   PRICE_DATA.forEach(cat=>{
     cat.items.forEach(item=>{
       item.specs.forEach(s=>{
-        built.push({id:'built_'+cat.cat+'_'+item.name+'_'+s.spec, cat:cat.cat, subCat:item.name, spec:s.spec, price:s.price, builtin:true});
+        const builtId='built_'+cat.cat+'_'+item.name+'_'+s.spec;
+        if(!overrideIds.has(builtId))
+          built.push({id:builtId, cat:cat.cat, subCat:item.name, spec:s.spec, price:s.price, builtin:true});
+        // 블랙 자동 추가
+        if(cat.cat==='경량랙'||cat.cat==='중량랙'){
+          const rate=cat.cat==='경량랙'?1.06:1.08;
+          const blackPrice=Math.round(Math.round(s.price*rate)/10)*10;
+          const finalPrice=item.name.includes('안전좌')?120:blackPrice;
+          if(!item.name.includes('안전핀')){
+            const blackId='black_'+cat.cat+'_'+item.name+'_'+s.spec;
+            if(!overrideIds.has(blackId))
+              built.push({id:blackId, cat:cat.cat, subCat:item.name+'/블랙', spec:s.spec, price:finalPrice, builtin:false, isBlackAuto:true});
+          }
+        }
       });
     });
   });
@@ -2349,38 +2555,29 @@ function renderPriceTable(){
         <th style="text-align:right;">단가 (원)</th>
         <th style="width:60px;"></th>
       </tr></thead>
-      <tbody>${items.flatMap((item,i)=>{
+      <tbody>${items.map((item,i)=>{
         const isStd = isStandardSpec(item.cat, item.subCat, item.spec);
-        const hasBlack = (item.cat==='경량랙'||item.cat==='중량랙') && item.builtin;
-        const isSilver = item.cat==='아연도금랙' && item.builtin;
-        const blackRate = item.cat==='경량랙'?1.06:item.cat==='중량랙'?1.08:0;
-        const blackPrice = hasBlack ? Math.round(Math.round(item.price*blackRate)/10)*10 : null;
-        const colorBadge = isSilver
+        const isBlack = item.subCat.includes('블랙') || item.isBlackAuto;
+        const isSilver = item.cat==='아연도금랙' && item.builtin && !isBlack;
+        const isIvory = !isBlack && !isSilver;
+        const colorBadge = isBlack
+          ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#1a1a1a;color:#fff;">블랙</span>`
+          : isSilver
           ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#E8E8E8;border:1px solid #B8B8B8;color:#555;">실버</span>`
           : `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#F5F5EE;border:1px solid #D8D4CB;color:#5a5248;">아이보리</span>`;
-        const rows = [];
-        // 아이보리/실버 행
-        rows.push(`<tr>
-          <td style="color:var(--tx3);font-size:11px;" rowspan="${hasBlack?2:1}">${i+1}</td>
-          <td rowspan="${hasBlack?2:1}">${hl(item.subCat)}</td>
+        const rowBg = isBlack ? 'background:#F8F8F8;' : '';
+        return `<tr style="${rowBg}">
+          <td style="color:var(--tx3);font-size:11px;">${i+1}</td>
+          <td>${hl(item.subCat.replace('/블랙',''))}</td>
           <td>${colorBadge}</td>
           <td>${hl(item.spec)}</td>
           <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isStd?'#DBEAFE':'#FEF3C7'};color:${isStd?'#1e40af':'#92400E'};font-weight:500;">${isStd?'규격':'비규격'}</span></td>
           <td style="text-align:right;font-family:var(--mono);">${item.price.toLocaleString()}</td>
-          <td style="text-align:center;">${!item.builtin?`<button onclick="editPriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">✏️</button><button onclick="deletePriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">×</button>`:''}
+          <td style="text-align:center;">
+            <button onclick="editPriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">✏️</button>
+            ${!item.builtin&&!item.isBlackAuto?`<button onclick="deletePriceItem('${item.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 4px;">×</button>`:''}
           </td>
-        </tr>`);
-        // 블랙 행
-        if(hasBlack && blackPrice){
-          rows.push(`<tr style="background:#F8F8F8;">
-            <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#1a1a1a;color:#fff;">블랙</span></td>
-            <td>${hl(item.spec)}</td>
-            <td style="text-align:center;"><span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isStd?'#DBEAFE':'#FEF3C7'};color:${isStd?'#1e40af':'#92400E'};font-weight:500;">${isStd?'규격':'비규격'}</span></td>
-            <td style="text-align:right;font-family:var(--mono);">${blackPrice.toLocaleString()}</td>
-            <td></td>
-          </tr>`);
-        }
-        return rows;
+        </tr>`;
       }).join('')}</tbody>
     </table>
   </div>`;
@@ -2515,11 +2712,13 @@ function openPriceAddModal(editId=null){
   document.getElementById('priceAddTitle').textContent=editId?'단가 수정':'단가 추가';
 
   if(editId){
-    const item=customPrices.find(x=>x.id===editId);
+    // customPrices 또는 allPriceItems에서 찾기
+    const item = customPrices.find(x=>x.id===editId) || allPriceItems().find(x=>x.id===editId);
     if(item){
       paItem.value=item.cat;
       updatePaSubItems();
       document.getElementById('paSubCat').value=item.subCat;
+      document.getElementById('paSubCatNew').value='';
       document.getElementById('paSpec').value=item.spec;
       document.getElementById('paPrice').value=item.price;
     }
@@ -2559,9 +2758,21 @@ async function savePriceItem(){
   const spec=document.getElementById('paSpec').value.trim();
   const price=parseInt(document.getElementById('paPrice').value)||0;
   if(!cat||!subCat||!spec||!price){alert('모든 항목을 입력하세요.');return;}
+
   const item={id:priceEditId||genId(),cat,subCat,spec,price,builtin:false};
-  if(priceEditId){ customPrices=customPrices.map(x=>x.id===priceEditId?item:x); }
-  else { customPrices.push(item); }
+
+  if(priceEditId){
+    // customPrices에 있으면 수정, 없으면(builtin/blackAuto) 새로 추가
+    const inCustom=customPrices.find(x=>x.id===priceEditId);
+    if(inCustom){
+      customPrices=customPrices.map(x=>x.id===priceEditId?item:x);
+    } else {
+      // builtin이나 blackAuto → override로 추가
+      customPrices.push({...item, overrideId:priceEditId});
+    }
+  } else {
+    customPrices.push(item);
+  }
   closePriceAddModal();
   renderPrice();
   await saveCustomPrice(item);
