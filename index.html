@@ -1086,7 +1086,9 @@ async function doLogin(){
   document.getElementById('loginErr').textContent='로그인 중...';
   const data = await authFetch('/token?grant_type=password', {email, password:pw});
   if(data.error){document.getElementById('loginErr').textContent=data.error_description||'로그인 실패';return;}
+  console.log('login data:', data.user?.id, data.access_token?.slice(0,20));
   const role = await getUserRole(data.user.id, data.access_token);
+  console.log('role:', role);
   if(!role||role.role==='pending'){
     localStorage.setItem('dclracks_token', data.access_token);
     localStorage.setItem('dclracks_uid', data.user.id);
