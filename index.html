@@ -1123,7 +1123,11 @@ async function doSignup(){
   if(data.error){document.getElementById('signupErr').textContent=data.error_description||'가입 실패';return;}
 
   const uid = data.user?.id;
-  if(!uid){document.getElementById('signupErr').textContent='가입 실패. 다시 시도해주세요.';return;}
+  if(!uid){
+    console.error('signup response:', data);
+    document.getElementById('signupErr').textContent=(data.msg||data.message||'가입 실패. 이미 가입된 이메일일 수 있어요.');
+    return;
+  }
 
   // user_roles에 코드 role로 등록
   await fetch(`${SUPA_URL}/rest/v1/user_roles`,{
@@ -1140,10 +1144,11 @@ async function doSignup(){
   });
 
   document.getElementById('signupErr').textContent='';
-  if(data.session?.access_token){
-    localStorage.setItem('dclracks_token', data.session.access_token);
+  const token = data.session?.access_token || data.access_token;
+  if(token && uid){
+    localStorage.setItem('dclracks_token', token);
     localStorage.setItem('dclracks_uid', uid);
-    const role = await getUserRole(uid, data.session.access_token);
+    const role = await getUserRole(uid, token);
     if(role&&role.role!=='pending'){
       currentUser={id:uid,email:data.user.email,role:role.role,name:role.name||data.user.email};
       onAuthSuccess();
@@ -1154,8 +1159,6 @@ async function doSignup(){
 }
 
 async function doLogout(){
-  const token = localStorage.getItem('dclracks_token');
-  if(token) await authFetch('/logout', {}).catch(()=>{});
   localStorage.removeItem('dclracks_token');
   localStorage.removeItem('dclracks_uid');
   currentUser = null;
@@ -1193,14 +1196,10 @@ async function tryAutoLogin(){
   if(!token||!uid) return false;
   try{
     const role = await getUserRole(uid, token);
-    if(!role||role.role==='pending'){showAuthTab('pending');return true;}
-    // 유저 정보
-    const uRes = await fetch(`${SUPA_URL}/auth/v1/user`,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}});
-    const uData = await uRes.json();
-    if(uData.id){
-      currentUser={id:uData.id,email:uData.email,role:role.role,name:role.name||uData.email};
-      return true;
-    }
+    if(!role) return false;
+    if(role.role==='pending'){showAuthTab('pending');return true;}
+    currentUser={id:uid, email:'', role:role.role, name:role.name||uid};
+    return true;
   }catch(e){}
   return false;
 }
