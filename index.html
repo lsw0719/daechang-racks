@@ -1042,16 +1042,13 @@ async function authFetch(path, body){
 }
 
 async function getUserRole(userId, accessToken){
-  // 먼저 사용자 토큰으로 시도, 실패 시 anon key로 시도
-  for(const token of [accessToken, SUPA_KEY]){
-    try{
-      const res = await fetch(`${SUPA_URL}/rest/v1/user_roles?id=eq.${userId}&select=role,name`, {
-        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}
-      });
-      const data = await res.json();
-      if(Array.isArray(data)&&data.length) return data[0];
-    }catch(e){}
-  }
+  try{
+    const res = await fetch(`${SUPA_URL}/rest/v1/user_roles?id=eq.${userId}&select=role,name`, {
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    const data = await res.json();
+    if(Array.isArray(data)&&data.length) return data[0];
+  }catch(e){}
   return null;
 }
 
