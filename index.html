@@ -1009,8 +1009,22 @@ async function sbFetch(path,opts={}){
   if(!res.ok){const e=await res.text();throw new Error(e);}
   const t=await res.text();return t?JSON.parse(t):null;
 }
-async function dbLoad(){const r=await sbFetch('/rest/v1/cards?order=created_at.desc&select=id,data');return r.map(x=>({id:x.id,...x.data}));}
-async function dbUpsert(card){const{id,...data}=card;await sbFetch('/rest/v1/cards',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id,data,updated_at:new Date().toISOString()})});}
+// 카드 목록 로드 (이미지 제외 - 용량 절감)
+async function dbLoad(){
+  const r=await sbFetch('/rest/v1/cards?order=created_at.desc&select=id,data');
+  return r.map(x=>({id:x.id,...x.data}));
+}
+// 특정 카드 이미지만 로드 (필요 시)
+async function dbLoadImages(id){
+  const r=await sbFetch(`/rest/v1/cards?id=eq.${id}&select=id,data->>images`);
+  if(!r.length) return [];
+  try{ return JSON.parse(r[0].images||'[]'); }catch(e){ return []; }
+}
+async function dbUpsert(card){
+  const{id,...data}=card;
+  // 이미지가 없거나 변경 없으면 이미지 필드 제외해서 용량 절감
+  await sbFetch('/rest/v1/cards',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id,data,updated_at:new Date().toISOString()})});
+}
 async function dbDelete(id){await sbFetch(`/rest/v1/cards?id=eq.${id}`,{method:'DELETE'});}
 async function calDbLoad(){const r=await sbFetch('/rest/v1/cal_events?order=updated_at.desc&select=id,data');return r.map(x=>({id:x.id,...x.data}));}
 async function calDbUpsert(ev){const{id,...data}=ev;await sbFetch('/rest/v1/cal_events',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id,data,updated_at:new Date().toISOString()})});}
@@ -1350,7 +1364,7 @@ setInterval(async()=>{
     const ch=calEvHash(cal);
     if(ch!==calHash){calEvents=cal;calHash=ch;if(document.getElementById('calPopup').classList.contains('open'))renderCal();}
   }catch(e){}
-},5000);
+},30000);
 
 // ════════════════════════════════════════
 // PAGE NAVIGATION
@@ -1610,7 +1624,7 @@ function updatePartsTotal(){
 // ════════════════════════════════════════
 // IMAGE
 // ════════════════════════════════════════
-function compressImg(file,maxW=900,q=0.72){
+function compressImg(file,maxW=600,q=0.45){
   return new Promise((res,rej)=>{
     const img=new Image(),url=URL.createObjectURL(file);
     img.onload=()=>{URL.revokeObjectURL(url);const sc=Math.min(1,maxW/img.width),w=Math.round(img.width*sc),hh=Math.round(img.height*sc),c=document.createElement('canvas');c.width=w;c.height=hh;c.getContext('2d').drawImage(img,0,0,w,hh);res(c.toDataURL('image/jpeg',q));};
@@ -1680,7 +1694,10 @@ function openNewModal(){
 }
 function openEditModal(id){
   const c=cards.find(x=>x.id===id);if(!c)return;
-  editId=id;pImgs=[...(c.images||[])];parts=[...(c.parts||[])];
+  editId=id;
+  // 이미지는 이미 로드된 것 사용, 없으면 빈 배열로 시작 (지연 로드)
+  pImgs=[...(c.images||[])];
+  parts=[...(c.parts||[])];
   document.getElementById('modalTitle').textContent='건 수정';
   document.getElementById('fDate').value=c.date||'';document.getElementById('fDate').classList.remove('inv');
   document.getElementById('fPerson').value=c.person||'';
