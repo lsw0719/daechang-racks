@@ -2296,101 +2296,109 @@ function nRenderParts(){
   nUpdateTotal();
 }
 
+async function nExportImage(){
+  if(!nParts.length){alert('부품이 없습니다.');return;}
+  const naming = document.getElementById('nNamePreview').textContent||'견적서';
+  _drawExportImage(nParts, naming);
+}
+
 async function exportModalImage(){
   if(!parts.length){alert('부품이 없습니다.');return;}
   const nameEl=document.getElementById('namePreview');
   const naming=nameEl?nameEl.textContent:'견적서';
-  const rows=parts.filter(p=>p.name);
-  const total=rows.reduce((s,p)=>s+p.qty*p.price,0);
-  const W=640,PAD=16,HEADER=44,ROW=30,FOOTER=44,BOTTOM=34;
-  const H=HEADER+rows.length*ROW+FOOTER+BOTTOM;
-  const canvas=document.createElement('canvas');
-  const dpr=window.devicePixelRatio||2;
-  canvas.width=W*dpr;canvas.height=H*dpr;
-  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#1A1916';ctx.fillRect(0,0,W,HEADER);
-  ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
-  [{label:'품명',x:150},{label:'규격',x:310},{label:'수량',x:395},{label:'단가',x:470},{label:'합계',x:560}]
-    .forEach(c=>ctx.fillText(c.label,c.x,HEADER/2+5));
-  rows.forEach((p,i)=>{
-    const y=HEADER+i*ROW;
-    ctx.fillStyle=i%2===0?'#F9F9F7':'#fff';ctx.fillRect(0,y,W,ROW);
-    ctx.strokeStyle='#E8E5E0';ctx.lineWidth=0.5;
-    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
-    ctx.fillStyle='#1A1916';ctx.font='12px sans-serif';ctx.textAlign='left';
-    ctx.save();ctx.beginPath();ctx.rect(PAD,y,250,ROW);ctx.clip();
-    ctx.fillText(p.name||'—',PAD,y+ROW/2+4);ctx.restore();
-    ctx.fillText(p.spec||'—',258,y+ROW/2+4);
-    ctx.textAlign='right';
-    ctx.fillText(p.qty+'개',415,y+ROW/2+4);
-    ctx.fillText((p.price||0).toLocaleString(),500,y+ROW/2+4);
-    ctx.fillStyle='#2D5BE3';ctx.font='bold 12px sans-serif';
-    ctx.fillText((p.qty*p.price).toLocaleString(),W-PAD,y+ROW/2+4);
-  });
-  const fy=HEADER+rows.length*ROW;
-  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,fy,W,FOOTER);
-  ctx.strokeStyle='#B0AA9E';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(0,fy);ctx.lineTo(W,fy);ctx.stroke();
-  ctx.fillStyle='#1A1916';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
-  ctx.fillText('합계',PAD,fy+FOOTER/2+5);
-  ctx.fillStyle='#2D5BE3';ctx.font='bold 15px sans-serif';ctx.textAlign='right';
-  ctx.fillText(total.toLocaleString()+'원',W-PAD,fy+FOOTER/2+5);
-  const ny=fy+FOOTER;
-  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,ny,W,BOTTOM);
-  ctx.fillStyle='#6B6660';ctx.font='11px monospace';ctx.textAlign='center';
-  ctx.fillText(naming==='—'?'':naming,W/2,ny+BOTTOM/2+4);
-  const fname=(naming&&naming!=='—')?naming+'.jpg':'견적서_'+today4()+'.jpg';
-  const link=document.createElement('a');
-  link.download=fname;link.href=canvas.toDataURL('image/jpeg',0.88);link.click();
+  _drawExportImage(parts, naming);
 }
 
-async function nExportImage(){
-  if(!nParts.length){alert('부품이 없습니다.');return;}
-  const naming = document.getElementById('nNamePreview').textContent||'견적서';
-  const rows = nParts.filter(p=>p.name);
-  const total = rows.reduce((s,p)=>s+p.qty*p.price,0);
-  const W=640,PAD=16,HEADER=44,ROW=30,FOOTER=44,BOTTOM=34;
-  const H=HEADER+rows.length*ROW+FOOTER+BOTTOM;
-  const canvas=document.createElement('canvas');
+function _wrapText(ctx, text, maxWidth){
+  const words = text.split('');
+  let lines = [], line = '';
+  for(let ch of words){
+    const test = line + ch;
+    if(ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = ch;
+    } else {
+      line = test;
+    }
+  }
+  if(line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+
+function _drawExportImage(rowData, naming){
+  const PAD=16, HEADER=44, LINE_H=18, CELL_PAD=6, FOOTER=44, BOTTOM=34;
+  const W=860;
   const dpr=window.devicePixelRatio||2;
-  canvas.width=W*dpr;canvas.height=H*dpr;
-  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#1A1916';ctx.fillRect(0,0,W,HEADER);
-  ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
-  [{label:'품명',x:150},{label:'규격',x:310},{label:'수량',x:395},{label:'단가',x:470},{label:'합계',x:560}]
-    .forEach(c=>ctx.fillText(c.label,c.x,HEADER/2+5));
-  rows.forEach((p,i)=>{
-    const y=HEADER+i*ROW;
-    ctx.fillStyle=i%2===0?'#F9F9F7':'#fff';ctx.fillRect(0,y,W,ROW);
-    ctx.strokeStyle='#E8E5E0';ctx.lineWidth=0.5;
-    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
-    ctx.fillStyle='#1A1916';ctx.font='12px sans-serif';ctx.textAlign='left';
-    ctx.save();ctx.beginPath();ctx.rect(PAD,y,250,ROW);ctx.clip();
-    ctx.fillText(p.name||'—',PAD,y+ROW/2+4);ctx.restore();
-    ctx.fillText(p.spec||'—',258,y+ROW/2+4);
-    ctx.textAlign='right';
-    ctx.fillText(p.qty+'개',415,y+ROW/2+4);
-    ctx.fillText((p.price||0).toLocaleString(),500,y+ROW/2+4);
-    ctx.fillStyle='#2D5BE3';ctx.font='bold 12px sans-serif';
-    ctx.fillText((p.qty*p.price).toLocaleString(),W-PAD,y+ROW/2+4);
+  // 컬럼 너비
+  const COL_NAME_W=220, COL_SPEC_W=310, COL_QTY_W=70, COL_PRICE_W=100, COL_TOTAL_W=100;
+  const COL_NAME_X=PAD;
+  const COL_SPEC_X=COL_NAME_X+COL_NAME_W+4;
+  const COL_QTY_X=COL_SPEC_X+COL_SPEC_W+4;
+  const COL_PRICE_X=COL_QTY_X+COL_QTY_W+4;
+  const COL_TOTAL_X=COL_PRICE_X+COL_PRICE_W+4;
+
+  // 미리 텍스트 측정용 캔버스
+  const tmp=document.createElement('canvas');
+  const tc=tmp.getContext('2d');
+  tc.font='11px sans-serif';
+
+  const rows=rowData.filter(p=>p.name).map(p=>{
+    const nameLines=_wrapText(tc, p.name||'—', COL_NAME_W);
+    const specLines=_wrapText(tc, p.spec||'—', COL_SPEC_W);
+    const maxLines=Math.max(nameLines.length, specLines.length, 1);
+    const rowH = maxLines * LINE_H + CELL_PAD*2;
+    return {p, nameLines, specLines, rowH};
   });
-  const fy=HEADER+rows.length*ROW;
-  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,fy,W,FOOTER);
-  ctx.strokeStyle='#B0AA9E';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(0,fy);ctx.lineTo(W,fy);ctx.stroke();
-  ctx.fillStyle='#1A1916';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
-  ctx.fillText('합계',PAD,fy+FOOTER/2+5);
-  ctx.fillStyle='#2D5BE3';ctx.font='bold 15px sans-serif';ctx.textAlign='right';
-  ctx.fillText(total.toLocaleString()+'원',W-PAD,fy+FOOTER/2+5);
+
+  const total=rowData.reduce((s,p)=>s+p.qty*p.price,0);
+  const totalRowsH=rows.reduce((s,r)=>s+r.rowH,0);
+  const H=HEADER+totalRowsH+FOOTER+BOTTOM;
+
+  const canvas=document.createElement('canvas');
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1A1916'; ctx.fillRect(0,0,W,HEADER);
+  ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('품명', COL_NAME_X+COL_NAME_W/2, HEADER/2+5);
+  ctx.fillText('규격', COL_SPEC_X+COL_SPEC_W/2, HEADER/2+5);
+  ctx.fillText('수량', COL_QTY_X+COL_QTY_W/2, HEADER/2+5);
+  ctx.fillText('단가', COL_PRICE_X+COL_PRICE_W/2, HEADER/2+5);
+  ctx.fillText('합계', COL_TOTAL_X+COL_TOTAL_W/2, HEADER/2+5);
+
+  let y=HEADER;
+  rows.forEach(({p, nameLines, specLines, rowH},i)=>{
+    ctx.fillStyle=i%2===0?'#F9F9F7':'#fff'; ctx.fillRect(0,y,W,rowH);
+    ctx.strokeStyle='#E8E5E0'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    ctx.fillStyle='#1A1916'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    nameLines.forEach((ln,li)=>ctx.fillText(ln, COL_NAME_X, y+CELL_PAD+LINE_H*(li+1)-3));
+    specLines.forEach((ln,li)=>ctx.fillText(ln, COL_SPEC_X, y+CELL_PAD+LINE_H*(li+1)-3));
+    ctx.textAlign='center';
+    ctx.fillText(p.qty+'개', COL_QTY_X+COL_QTY_W/2, y+rowH/2+4);
+    ctx.textAlign='right';
+    ctx.fillText((p.price||0).toLocaleString(), COL_PRICE_X+COL_PRICE_W, y+rowH/2+4);
+    ctx.fillStyle='#2D5BE3'; ctx.font='bold 11px sans-serif';
+    ctx.fillText((p.qty*p.price).toLocaleString(), COL_TOTAL_X+COL_TOTAL_W, y+rowH/2+4);
+    y+=rowH;
+  });
+
+  const fy=y;
+  ctx.fillStyle='#F2F0EB'; ctx.fillRect(0,fy,W,FOOTER);
+  ctx.strokeStyle='#B0AA9E'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,fy); ctx.lineTo(W,fy); ctx.stroke();
+  ctx.fillStyle='#1A1916'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('합계', PAD, fy+FOOTER/2+5);
+  ctx.fillStyle='#2D5BE3'; ctx.font='bold 15px sans-serif'; ctx.textAlign='right';
+  ctx.fillText(total.toLocaleString()+'원', W-PAD, fy+FOOTER/2+5);
   const ny=fy+FOOTER;
-  ctx.fillStyle='#F2F0EB';ctx.fillRect(0,ny,W,BOTTOM);
-  ctx.fillStyle='#6B6660';ctx.font='11px monospace';ctx.textAlign='center';
-  ctx.fillText(naming==='—'?'':naming,W/2,ny+BOTTOM/2+4);
+  ctx.fillStyle='#F2F0EB'; ctx.fillRect(0,ny,W,BOTTOM);
+  ctx.fillStyle='#6B6660'; ctx.font='11px monospace'; ctx.textAlign='center';
+  ctx.fillText(naming==='—'?'':naming, W/2, ny+BOTTOM/2+4);
   const fname=(naming&&naming!=='—')?naming+'.jpg':'견적서_'+today4()+'.jpg';
   const link=document.createElement('a');
-  link.download=fname;link.href=canvas.toDataURL('image/jpeg',0.88);link.click();
+  link.download=fname; link.href=canvas.toDataURL('image/jpeg',0.88); link.click();
 }
 
 async function nSaveCard(){
