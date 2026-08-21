@@ -138,7 +138,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 .part-row:hover{background:var(--bg);}
 .part-qty-ctrl{display:flex;align-items:center;gap:3px;}
 .pqb{width:20px;height:20px;border:1px solid var(--border-dark);background:var(--bg);border-radius:2px;cursor:pointer;font-size:12px;color:var(--tx2);display:flex;align-items:center;justify-content:center;}
-.pqi{width:40px;text-align:center;border:1px solid var(--border-dark);border-radius:2px;padding:2px 3px;font-size:11px;font-family:var(--mono);}
+.pqi{width:56px;text-align:center;border:1px solid var(--border-dark);border-radius:2px;padding:2px 3px;font-size:11px;font-family:var(--mono);}
 .parts-total{padding:8px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;}
 
 /* ── LOCK ── */
@@ -1840,28 +1840,85 @@ function cardHtml(c){
 function outColHtml(){
   const now=new Date();
   const yr=now.getFullYear();
+  const mo=now.getMonth();
   const todayFull=`${yr}${today4()}`;
   const toFull=e=>`${e.year||yr}${e.date}`;
-  const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   const CAL_COLORS={'ji-exp':'#22C55E','ji-cfm':'#3B82F6','sp-exp':'#F97316','sp-cfm':'#EF4444'};
-  const TYPE_LABEL={'ji-exp':'직송 예상','ji-cfm':'직송 확정','sp-exp':'스피드랙 예상','sp-cfm':'스피드랙 확정'};
+  const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
   const allEvs=[
     ...calEvents,
     ...cards.filter(c=>c.shipDate&&c.shipDate!=='미정'&&isVD(c.shipDate))
       .map(c=>({id:'card_'+c.id,date:c.shipDate,year:yr,type:c.dest==='직송'?'ji-cfm':'sp-cfm',text:c.name,fromCard:true}))
-  ].filter(e=>toFull(e)>=todayFull);
-  allEvs.sort((a,b)=>toFull(a).localeCompare(toFull(b)));
-  let rows='';
-  if(!allEvs.length){rows='<div class="empty">예정된 출고 없음</div>';}
-  else{
-    let lastDate='';
-    allEvs.forEach(e=>{
-      const mo2=parseInt(e.date.slice(0,2)),d2=parseInt(e.date.slice(2,4));
-      if(e.date!==lastDate){rows+=`<div class="out-date-hd">${mn[mo2-1]} ${d2}일</div>`;lastDate=e.date;}
-      rows+=`<div class="out-ev"><div class="out-ev-dot" style="background:${CAL_COLORS[e.type]}"></div><div style="flex:1;min-width:0;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escH(e.text)}</div><div style="font-size:9px;color:var(--tx3);">${TYPE_LABEL[e.type]||''}</div></div>${!e.fromCard?`<button onclick="deleteCalEvent('${e.id}')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:11px;">×</button>`:''}</div>`;
-    });
+  ];
+
+  // 이번 달 달력 생성
+  const firstDay=new Date(yr,mo,1).getDay();
+  const dim=new Date(yr,mo+1,0).getDate();
+  const tStr=today4();
+
+  let calGrid='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:4px;">';
+  ['일','월','화','수','목','금','토'].forEach((d,i)=>
+    calGrid+=`<div style="text-align:center;font-size:9px;font-weight:600;color:${i===0?'#e57373':i===6?'#4dabf7':'var(--tx3)'};">${d}</div>`
+  );
+  calGrid+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;">';
+
+  // 이전달 빈칸
+  for(let i=0;i<firstDay;i++) calGrid+=`<div style="min-height:32px;"></div>`;
+
+  for(let d=1;d<=dim;d++){
+    const ds=String(mo+1).padStart(2,'0')+String(d).padStart(2,'0');
+    const dFull=`${yr}${ds}`;
+    const isToday=ds===tStr;
+    const isPast=dFull<todayFull;
+    const dayEvs=allEvs.filter(e=>e.date===ds&&(!e.year||e.year===yr));
+    const dow=(firstDay+d-1)%7;
+    const txColor=isPast?'var(--tx3)':dow===0?'#e57373':dow===6?'#4dabf7':'var(--tx)';
+    const dots=dayEvs.map(e=>`<div style="width:5px;height:5px;border-radius:50%;background:${CAL_COLORS[e.type]||'#999'};"></div>`).join('');
+    const bg=isToday?'var(--accent-l)':dayEvs.length&&!isPast?'#f0f7ff':'transparent';
+    const tooltip=dayEvs.map(e=>escH(e.text)).join('&#10;');
+
+    calGrid+=`<div title="${tooltip}" style="min-height:32px;padding:2px;border-radius:3px;background:${bg};cursor:${dayEvs.length?'pointer':'default'};" onclick="outCalSelDay('${ds}')">
+      <div style="font-size:10px;font-weight:${isToday?'700':'400'};color:${isToday?'var(--accent)':txColor};text-align:center;${isToday?'background:var(--accent);color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;margin:0 auto;':''}">${d}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:1px;justify-content:center;margin-top:1px;">${dots}</div>
+    </div>`;
   }
-  return`<div class="out-col"><div class="out-col-hd"><div class="col-tw"><span style="font-size:12px;">📅</span><span style="font-size:12px;font-weight:600;">출고 예정</span></div><button onclick="toggleCal()" style="font-size:10px;padding:2px 6px;border:1px solid var(--border-dark);background:var(--bg);color:var(--tx2);border-radius:2px;cursor:pointer;">달력</button></div><div class="out-col-cards">${rows}</div></div>`;
+  calGrid+='</div>';
+
+  // 선택된 날 이벤트
+  let selPanel='';
+  if(window._outCalSel){
+    const selEvs=allEvs.filter(e=>e.date===window._outCalSel&&(!e.year||e.year===yr));
+    const mo2=parseInt(window._outCalSel.slice(0,2)),d2=parseInt(window._outCalSel.slice(2,4));
+    selPanel=`<div style="border-top:1px solid var(--border);padding:8px;margin-top:6px;">
+      <div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:5px;">${mn[mo2-1]} ${d2}일</div>
+      ${selEvs.length?selEvs.map(e=>`<div style="display:flex;align-items:center;gap:5px;padding:3px 0;font-size:11px;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${CAL_COLORS[e.type]};flex-shrink:0;"></div>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escH(e.text)}</span>
+      </div>`).join(''):'<div style="font-size:11px;color:var(--tx3);">일정 없음</div>'}
+    </div>`;
+  }
+
+  return`<div class="out-col">
+    <div class="out-col-hd">
+      <div class="col-tw"><span style="font-size:12px;">📅</span><span style="font-size:12px;font-weight:600;">${mn[mo]} 출고 예정</span></div>
+    </div>
+    <div style="padding:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;font-size:10px;">
+        <div style="display:flex;align-items:center;gap:3px;"><span style="width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block;"></span>직송 예상</div>
+        <div style="display:flex;align-items:center;gap:3px;"><span style="width:7px;height:7px;border-radius:50%;background:#3B82F6;display:inline-block;"></span>직송 확정</div>
+        <div style="display:flex;align-items:center;gap:3px;"><span style="width:7px;height:7px;border-radius:50%;background:#F97316;display:inline-block;"></span>스피드랙 예상</div>
+        <div style="display:flex;align-items:center;gap:3px;"><span style="width:7px;height:7px;border-radius:50%;background:#EF4444;display:inline-block;"></span>스피드랙 확정</div>
+      </div>
+      ${calGrid}
+      ${selPanel}
+    </div>
+  </div>`;
+}
+
+function outCalSelDay(ds){
+  window._outCalSel = window._outCalSel===ds ? null : ds;
+  renderKanban();
 }
 
 // ════════════════════════════════════════
@@ -2279,7 +2336,7 @@ function nRenderParts(){
       <td style="padding:7px 12px;">
         <div style="display:flex;align-items:center;gap:3px;justify-content:center;">
           <button onclick="nAddQty('${p.id}',-1)" style="width:22px;height:22px;border:1px solid var(--border-dark);background:var(--bg);border-radius:2px;cursor:pointer;font-size:13px;color:var(--tx2);">−</button>
-          <input type="number" value="${p.qty}" min="0" onchange="nUpdateField('${p.id}','qty',this.value);nRenderParts();" style="width:44px;text-align:center;border:1px solid var(--border-dark);border-radius:2px;padding:2px;font-size:12px;font-family:var(--mono);background:var(--surface);color:var(--tx);">
+          <input type="number" value="${p.qty}" min="0" onchange="nUpdateField('${p.id}','qty',this.value);nRenderParts();" style="width:56px;text-align:center;border:1px solid var(--border-dark);border-radius:2px;padding:2px;font-size:12px;font-family:var(--mono);background:var(--surface);color:var(--tx);">
           <button onclick="nAddQty('${p.id}',1)" style="width:22px;height:22px;border:1px solid var(--border-dark);background:var(--bg);border-radius:2px;cursor:pointer;font-size:13px;color:var(--tx2);">+</button>
         </div>
       </td>
