@@ -1474,7 +1474,7 @@ function calcParts(type,raw,qty,form){
 
 // 단가 자동 조회
 function lookupPrice(name, spec, catHint=''){
-  const lookupName = name.includes('공용받침') ? name.replace('공용받침','선반받침') : name;
+  const lookupName = name;
   const targets = catHint
     ? PRICE_DATA.filter(c=>c.cat.includes(catHint) || catHint.includes(c.cat))
     : PRICE_DATA;
