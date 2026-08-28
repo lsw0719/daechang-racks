@@ -109,7 +109,7 @@ header{background:var(--tx);color:#fff;padding:0 24px;display:flex;align-items:c
 /* ── MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-start;justify-content:center;padding-top:60px;}
 .overlay.open{display:flex;}
-.modal{background:var(--surface);border-radius:8px;width:660px;max-width:96vw;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+.modal{background:var(--surface);border-radius:8px;width:760px;max-width:96vw;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);}
 .modal-hd{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .modal-title{font-size:14px;font-weight:600;}
 .modal-close{background:none;border:none;font-size:20px;color:var(--tx3);cursor:pointer;}
@@ -133,12 +133,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 .parts-hd-title{font-size:12px;font-weight:600;color:var(--tx2);}
 .parts-input-row{padding:10px 14px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1.4fr 1.6fr 0.8fr 1fr 0.8fr auto;gap:6px;align-items:center;background:var(--accent-l);}
 .parts-list{max-height:260px;overflow-y:auto;}
-.part-row{display:grid;grid-template-columns:1.8fr 2fr 110px 1fr auto;gap:4px;padding:7px 10px;border-bottom:0.5px solid var(--border);align-items:center;font-size:12px;}
+.part-row{display:grid;grid-template-columns:2fr 2.5fr 120px 1.2fr auto;gap:6px;padding:7px 14px;border-bottom:0.5px solid var(--border);align-items:center;font-size:12px;}
 .part-row:last-child{border-bottom:none;}
 .part-row:hover{background:var(--bg);}
 .part-qty-ctrl{display:flex;align-items:center;gap:3px;}
-.pqb{width:20px;height:20px;border:1px solid var(--border-dark);background:var(--bg);border-radius:2px;cursor:pointer;font-size:12px;color:var(--tx2);display:flex;align-items:center;justify-content:center;}
-.pqi{width:50px;text-align:center;border:1px solid var(--border-dark);border-radius:2px;padding:2px 3px;font-size:12px;font-family:var(--mono);}
+.pqb{width:24px;height:24px;border:1px solid var(--border-dark);background:var(--bg);border-radius:2px;cursor:pointer;font-size:13px;color:var(--tx2);display:flex;align-items:center;justify-content:center;}
+.pqi{width:52px;text-align:center;border:1px solid var(--border-dark);border-radius:2px;padding:2px 3px;font-size:13px;font-family:var(--mono);}
 .parts-total{padding:8px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;}
 
 /* ── LOCK ── */
@@ -1547,8 +1547,7 @@ function calcAndAdd(){
     if(type==='zinc'){
       add(`${pfx}/규격/공용받침`,String(d),lev*2*cnt);
     } else {
-      add(`${pfx}/규격/상부받침`,String(d),2*cnt);
-      if(lev>1) add(`${pfx}/규격/선반받침`,String(d),(lev-1)*2*cnt);
+      add(`${pfx}/규격/공용받침`,String(d),lev*2*cnt);
     }
     add(`${pfx}/부속/안전좌`,'50*50',pillar*cnt);
     add(`${pfx}/부속/안전핀`,'4파이',8*cnt);
@@ -2213,8 +2212,7 @@ function nCalcAndAdd(type){
     if(type==='zinc'){
       add(`${pfx}/규격/공용받침`,String(d),lev*2*cnt);
     } else {
-      add(`${pfx}/규격/상부받침`,String(d),2*cnt);
-      if(lev>1) add(`${pfx}/규격/선반받침`,String(d),(lev-1)*2*cnt);
+      add(`${pfx}/규격/공용받침`,String(d),lev*2*cnt);
     }
 
     add(`${pfx}/부속/안전좌`,'50*50',pillar*cnt);
@@ -2600,8 +2598,7 @@ function renderHomeCalPanel(ds, allEvs){
 const PRICE_DATA=[
   {cat:'경량랙',items:[
     {name:'기둥',specs:[{spec:'900',price:3060},{spec:'1200',price:3970},{spec:'1500',price:4780},{spec:'1800',price:5400},{spec:'2100',price:6320},{spec:'2400',price:7230},{spec:'2700',price:8980},{spec:'3000',price:10000}]},
-    {name:'상부받침',specs:[{spec:'300',price:510},{spec:'450',price:810},{spec:'600',price:1020}]},
-    {name:'선반받침',specs:[{spec:'300',price:510},{spec:'450',price:810},{spec:'600',price:1020}]},
+    {name:'공용받침',specs:[{spec:'300',price:510},{spec:'450',price:810},{spec:'600',price:1020}]},
     {name:'전면빔',specs:[{spec:'700',price:1730},{spec:'900',price:2040},{spec:'1200',price:2750},{spec:'1500',price:3460}]},
     {name:'선반',specs:[{spec:'700×300',price:4100},{spec:'700×450',price:5460},{spec:'700×600',price:7560},{spec:'900×300',price:4100},{spec:'900×450',price:5460},{spec:'900×600',price:7560},{spec:'1200×300',price:5360},{spec:'1200×450',price:7040},{spec:'1200×600',price:9980},{spec:'1500×300',price:6620},{spec:'1500×450',price:8720},{spec:'1500×600',price:13760}]},
     {name:'안전좌',specs:[{spec:'50*50',price:120}]},
