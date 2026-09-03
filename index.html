@@ -2071,15 +2071,24 @@ function toggleMCut(){
 }
 
 function nGetItemsFromParts(){
-  // 부품목록에서 품목 종류 추출
-  const types=new Set();
+  // 부품목록에서 품목 종류 추출 (블랙 여부 포함)
+  const typeMap=new Map(); // key: 품목명, value: 블랙여부
   nParts.forEach(p=>{
-    if(p.name.includes('아연도금'))types.add('아연도금');
-    else if(p.name.includes('중량랙'))types.add('중량랙');
-    else if(p.name.includes('경량랙'))types.add('경량랙');
-    else if(p.name.includes('철망')||p.name.includes('메쉬'))types.add('메쉬망');
+    const isBlack=p.name.includes('/블랙');
+    if(p.name.includes('아연도금')){
+      typeMap.set('아연도금',typeMap.get('아연도금')||isBlack);
+    } else if(p.name.includes('중량랙')){
+      typeMap.set('중량랙',typeMap.get('중량랙')||isBlack);
+    } else if(p.name.includes('경량랙')){
+      typeMap.set('경량랙',typeMap.get('경량랙')||isBlack);
+    } else if(p.name.includes('철망')||p.name.includes('메쉬')){
+      typeMap.set('메쉬망',typeMap.get('메쉬망')||false);
+    }
   });
-  return types.size>0?[...types].join('·'):nTab==='zinc'?'아연도금':nTab==='mesh'?'메쉬망':nTab==='heavy'?'중량랙':'경량랙';
+  if(typeMap.size===0){
+    return nTab==='zinc'?'아연도금':nTab==='mesh'?'메쉬망':nTab==='heavy'?'중량랙':'경량랙';
+  }
+  return [...typeMap.entries()].map(([type,isBlack])=>isBlack?`블랙${type}`:type).join(',');
 }
 
 function nUpdPrev(){
