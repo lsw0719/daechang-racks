@@ -422,29 +422,33 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
         <!-- 메쉬망 -->
         <div id="ninput-mesh" style="display:none;">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
-            <div class="fgroup"><div class="flabel">세로 (mm)</div><input type="number" id="nMH" placeholder="900" min="1" style="font-size:13px;"></div>
-            <div class="fgroup"><div class="flabel">가로 (mm)</div><input type="number" id="nMW" placeholder="1500" min="1" style="font-size:13px;"></div>
+            <div class="fgroup"><div class="flabel">가로 (mm)</div><input type="number" id="nMW" placeholder="880" min="1" style="font-size:13px;" oninput="autoDetectMeshCut()"></div>
+            <div class="fgroup"><div class="flabel">세로 (mm)</div><input type="number" id="nMH" placeholder="1500" min="1" style="font-size:13px;" oninput="autoDetectMeshCut()"></div>
             <div class="fgroup"><div class="flabel">수량</div><input type="number" id="nMCnt" placeholder="1" min="1" value="1" style="font-size:13px;"></div>
           </div>
           <!-- 비규격 절단비 -->
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;">
             <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:8px;">
               <input type="checkbox" id="nMCut" onchange="toggleMCut()"> 비규격 절단 적용
+              <span id="nMCutAutoLabel" style="font-size:11px;color:var(--accent);display:none;">자동 감지됨</span>
             </label>
             <div id="nMCutPanel" style="display:none;">
-              <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;">사이즈 표기: 세로×가로 / 가까운 규격 단가 + 절단비</div>
+              <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;">
+                사이즈 표기: 가로×세로<br>
+                <span style="color:var(--tx2);">※ 가로 절단 시 세로 절단비 적용 (세로로 자르는 비용)</span>
+              </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                 <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-                  <input type="checkbox" id="nMCutV"> 세로 절단
+                  <input type="checkbox" id="nMCutV"> 세로 절단비 (가로 절단 시)
                 </label>
                 <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-                  <input type="checkbox" id="nMCutH"> 가로 절단
+                  <input type="checkbox" id="nMCutH"> 가로 절단비 (세로 절단 시)
                 </label>
               </div>
               <div style="font-size:11px;color:var(--tx2);padding:8px;background:var(--surface);border-radius:4px;border:1px solid var(--border);">
-                <div style="font-weight:600;margin-bottom:4px;">절단비 기준</div>
-                <div>30장 미만: 세로 5,000원 / 가로 3,000원 (장당)</div>
-                <div>30장 이상: 세로 4,000원 / 가로 2,000원 (장당)</div>
+                <div style="font-weight:600;margin-bottom:4px;">절단비 기준 (장당, 메쉬망 단가에 합산)</div>
+                <div>30장 미만: 세로 5,000원 / 가로 3,000원</div>
+                <div>30장 이상: 세로 4,000원 / 가로 2,000원</div>
               </div>
             </div>
           </div>
@@ -2065,6 +2069,38 @@ function toggleSetup(type, isBlack){
   if(!isBlack)cb.checked=false;
 }
 
+// 규격 외 사이즈 자동 감지
+// 사이즈 표기: 가로×세로 (nMW=가로, nMH=세로)
+// 규격 가로: 280,430,580,880,1180 / 규격 세로: 1500,1800,2100,2400
+const MESH_STD_W_LIST=[280,430,580,880,1180]; // 가로 규격
+const MESH_STD_H_LIST=[1500,1800,2100,2400];  // 세로 규격
+
+function autoDetectMeshCut(){
+  const w=parseInt(document.getElementById('nMW').value)||0; // 가로
+  const h=parseInt(document.getElementById('nMH').value)||0; // 세로
+  if(!h||!w) return;
+  const isStdW=MESH_STD_W_LIST.includes(w); // 가로가 규격인지
+  const isStdH=MESH_STD_H_LIST.includes(h); // 세로가 규격인지
+  const needCut=!isStdW||!isStdH;
+  const cutCb=document.getElementById('nMCut');
+  const autoLabel=document.getElementById('nMCutAutoLabel');
+  if(needCut){
+    cutCb.checked=true;
+    toggleMCut();
+    // 가로가 규격 외 → 세로로 잘라야 함 → 세로 절단비(nMCutV)
+    document.getElementById('nMCutV').checked=!isStdW;
+    // 세로가 규격 외 → 가로로 잘라야 함 → 가로 절단비(nMCutH)
+    document.getElementById('nMCutH').checked=!isStdH;
+    if(autoLabel) autoLabel.style.display='inline';
+  } else {
+    cutCb.checked=false;
+    toggleMCut();
+    document.getElementById('nMCutV').checked=false;
+    document.getElementById('nMCutH').checked=false;
+    if(autoLabel) autoLabel.style.display='none';
+  }
+}
+
 function toggleMCut(){
   document.getElementById('nMCutPanel').style.display=
     document.getElementById('nMCut').checked?'block':'none';
@@ -2135,42 +2171,40 @@ function findMeshBasePrice(h,w){
 function nCalcAndAdd(type){
   let newParts=[];
   if(type==='mesh'){
-    const h=parseInt(document.getElementById('nMH').value)||0;
-    const w=parseInt(document.getElementById('nMW').value)||0;
+    const w=parseInt(document.getElementById('nMW').value)||0; // 가로
+    const h=parseInt(document.getElementById('nMH').value)||0; // 세로
     const cnt=parseInt(document.getElementById('nMCnt').value)||1;
-    if(!h||!w){alert('세로, 가로를 입력하세요.');return;}
+    if(!h||!w){alert('가로, 세로를 입력하세요.');return;}
     const isCut=document.getElementById('nMCut').checked;
 
     if(!isCut){
-      // 일반 - 단가표 직접 조회
-      const spec=`${h}×${w}`;
+      // 규격 - 단가표 직접 조회 (가로×세로 표기)
+      const spec=`${w}×${h}`;
       const price=lookupPrice('철망',`${h}×${w}`,'철망')||lookupPrice('철망',`${w}×${h}`,'철망');
       newParts.push({id:genId(),name:'철망/규격',spec,qty:cnt,price,editable:true});
     } else {
       // 비규격 절단
-      const cutV=document.getElementById('nMCutV').checked;
-      const cutH=document.getElementById('nMCutH').checked;
-      if(!cutV&&!cutH){alert('세로 또는 가로 절단을 선택하세요.');return;}
+      const cutV=document.getElementById('nMCutV').checked; // 세로 절단비 (가로 절단 시)
+      const cutH=document.getElementById('nMCutH').checked; // 가로 절단비 (세로 절단 시)
+      if(!cutV&&!cutH){alert('절단비를 선택하세요.');return;}
 
       const base=findMeshBasePrice(h,w);
       if(!base){alert('기준 규격을 찾을 수 없습니다.');return;}
 
-      // 기준 철망 - 규격에 실제 사이즈 표기
-      newParts.push({id:genId(),name:'철망/규격',spec:`${h}×${w} (기준:${base.baseH}×${base.baseW})`,qty:cnt,price:base.price,editable:true});
-
-      // 절단비 - 장당 단가×수량을 합산해서 1줄로
       const under30=cnt<30;
-      const cutParts=[];
-      if(cutV){
-        const feePerSheet=under30?5000:4000;
-        cutParts.push(`세로${feePerSheet.toLocaleString()}원`);
-      }
-      if(cutH){
-        const feePerSheet=under30?3000:2000;
-        cutParts.push(`가로${feePerSheet.toLocaleString()}원`);
-      }
-      const totalCutFee=(cutV?(under30?5000:4000):0)+(cutH?(under30?3000:2000):0);
-      newParts.push({id:genId(),name:'철망/절단비',spec:`${h}×${w} (${cutParts.join('+')}×${cnt}장)`,qty:1,price:totalCutFee*cnt,editable:true});
+      const cutVFee=cutV?(under30?5000:4000):0; // 세로 절단비
+      const cutHFee=cutH?(under30?3000:2000):0; // 가로 절단비
+      const totalCutFeePerSheet=cutVFee+cutHFee;
+
+      // 규격 표기: 가로×세로 (기준:규격가로×규격세로, 세로절단비, 가로절단비)
+      const cutLabels=[];
+      if(cutV)cutLabels.push('세로절단비');
+      if(cutH)cutLabels.push('가로절단비');
+      const spec=`${w}×${h} (기준:${base.baseW}×${base.baseH}, ${cutLabels.join(', ')})`;
+
+      // 절단비를 단가에 합산
+      const unitPrice=base.price+totalCutFeePerSheet;
+      newParts.push({id:genId(),name:'철망/규격',spec,qty:cnt,price:unitPrice,editable:true});
     }
   } else {
     const ids={zinc:['nZW','nZD','nZH','nZLev','nZCnt','nZForm'],
