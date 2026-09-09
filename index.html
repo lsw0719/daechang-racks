@@ -1092,7 +1092,14 @@ async function getUserRole(userId, accessToken){
   return null;
 }
 
-function showAuthTab(tab){
+function decodeJWT(token){
+  try{
+    const base64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const padded = base64.padEnd(base64.length+(4-base64.length%4)%4,'=');
+    const json = decodeURIComponent(atob(padded).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(json);
+  }catch(e){return null;}
+}
   document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
   document.getElementById('signupForm').style.display = tab==='signup'?'block':'none';
   document.getElementById('pendingForm').style.display = tab==='pending'?'block':'none';
@@ -1107,8 +1114,8 @@ async function doLogin(){
   const data = await authFetch('/token?grant_type=password', {email, password:pw});
   if(data.error||!data.access_token){document.getElementById('loginErr').textContent=data.error_description||data.error||'로그인 실패';return;}
   // JWT에서 userId 추출
-  const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-  const userId = payload.sub;
+  const payload = decodeJWT(data.access_token);
+  const userId = payload?.sub;
   const accessToken = data.access_token;
   if(!userId){document.getElementById('loginErr').textContent='로그인 실패. 다시 시도해주세요.';return;}
   const role = await getUserRole(userId, accessToken);
@@ -1146,8 +1153,8 @@ async function doSignup(){
   document.getElementById('signupErr').textContent='계정 생성 중...';
   const data = await authFetch('/signup', {email, password:pw, data:{name}});
   if(data.error||!data.access_token){document.getElementById('signupErr').textContent=data.error_description||'가입 실패. 이미 가입된 이메일일 수 있어요.';return;}
-  const payload2 = JSON.parse(atob(data.access_token.split('.')[1]));
-  const uid = payload2.sub;
+  const payload2 = decodeJWT(data.access_token);
+  const uid = payload2?.sub;
   if(!uid){document.getElementById('signupErr').textContent='가입 실패. 다시 시도해주세요.';return;}
 
   // user_roles에 코드 role로 등록
@@ -2188,7 +2195,8 @@ function nCalcAndAdd(type){
       const cutH=document.getElementById('nMCutH').checked; // 가로 절단비 (세로 절단 시)
       if(!cutV&&!cutH){alert('절단비를 선택하세요.');return;}
 
-      const base=findMeshBasePrice(h,w);
+      // w=가로(nMW), h=세로(nMH) → MESH_PRICE_TABLE은 h=가로규격, w=세로규격
+      const base=findMeshBasePrice(w,h);
       if(!base){alert('기준 규격을 찾을 수 없습니다.');return;}
 
       const under30=cnt<30;
@@ -2200,7 +2208,7 @@ function nCalcAndAdd(type){
       const cutLabels=[];
       if(cutV)cutLabels.push('세로절단비');
       if(cutH)cutLabels.push('가로절단비');
-      const spec=`${w}×${h} (기준:${base.baseW}×${base.baseH}, ${cutLabels.join(', ')})`;
+      const spec=`${w}×${h} (기준:${base.baseH}×${base.baseW}, ${cutLabels.join(', ')})`;
 
       // 절단비를 단가에 합산
       const unitPrice=base.price+totalCutFeePerSheet;
