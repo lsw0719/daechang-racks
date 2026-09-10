@@ -1100,7 +1100,8 @@ function decodeJWT(token){
     return JSON.parse(json);
   }catch(e){return null;}
 }
-  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+
+function showAuthTab(tab){
   document.getElementById('signupForm').style.display = tab==='signup'?'block':'none';
   document.getElementById('pendingForm').style.display = tab==='pending'?'block':'none';
   document.getElementById('authSubTitle').textContent = tab==='login'?'로그인하세요':tab==='signup'?'계정을 만드세요':'승인 대기';
@@ -1347,13 +1348,13 @@ async function loadAll(){
   }catch(e){console.error(e);setSS('error');}
   setSS('');
   // 강제로 homePage 표시
-  ['home','new','kanban','archive','price'].forEach(k=>{
+  ['home','new','kanban','archive','price','admin'].forEach(k=>{
     const el=document.getElementById(k+'Page');
     if(el) el.style.display=k==='home'?'block':'none';
   });
   document.getElementById('si-home')?.classList.add('active');
   curPage='home';
-  renderHomeCal();
+  showPage('home');
 }
 async function saveCardDb(card){
   setSS('saving');
